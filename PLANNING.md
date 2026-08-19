@@ -55,12 +55,12 @@ ManagerDesk é **local-first, single-tenant, P2P**: cada máquina tem seu própr
 
 - **Frontend**: React 19 + Vite + TS + Tailwind — mesma base, reuso quase total de `components/ui`. Manter SPA (não Next.js): é produto B2B atrás de login, não precisa SSR/SEO; SPA minimiza a migração de código vindo do ManagerDesk.
 - **Roteamento**: `wouter` (manter, já é a escolha atual).
-- **Backend**: API Node.js (Fastify ou Hono) + tRPC ou REST, Drizzle ORM.
-- **Banco**: Postgres gerenciado (Neon/Supabase/RDS). Schema quase idêntico ao `schema.ts` atual — troca de dialeto (`sqlite-core`→`pg-core`, `integer(timestamp_ms)`→`timestamp`).
-- **Auth multi-tenant**: Clerk ou Auth.js/Lucia com Organizations = escritórios; usuários = advogados/staff com role (owner/advogado/assistente).
-- **Storage de arquivos**: Cloudflare R2 ou S3, prefixado por `tenant_id`, URLs assinadas — substitui a pasta local de cliente.
-- **Hosting**: Vercel/Fly.io/Railway (app) + Postgres gerenciado separado.
-- **Jobs**: scheduler simples (cron do host, ou Trigger.dev) para alertas de prazo — já útil no MVP mesmo sem WhatsApp/integração.
+- **Backend**: sem servidor Node/Worker dedicado para CRUD — app fala direto com Postgres via `supabase-js` (PostgREST), isolamento multi-tenant garantido por RLS (`tenant_id`). Único componente server-side é uma Supabase Edge Function (Deno), usada só onde um segredo não pode ir ao client: webhook de pagamento (se/quando decidir cobrar assinatura SaaS do tenant — ainda em aberto, ver §8) e envio de e-mail de alerta de prazo.
+- **Banco**: Supabase Postgres. Schema quase idêntico ao `schema.ts` atual — troca de dialeto (`sqlite-core`→`pg-core`). Drizzle usado só em dev/migração (`db:generate`/`db:push`); runtime não depende de conexão TCP direta (evita o erro de pooling/Hyperdrive já observado no `projeto_ebd` ao tentar Worker→Postgres direto).
+- **Auth multi-tenant**: Supabase Auth. Organização/tenant modelada como tabela própria (`tenants` + `users.tenant_id`), não via "Organizations" nativo (Supabase Auth não tem isso pronto como Clerk) — trade-off aceito em troca de unificar tudo (DB+Auth+Storage+Functions) num fornecedor só.
+- **Storage de arquivos**: Supabase Storage, prefixado por `tenant_id`, RLS também no bucket — substitui a pasta local de cliente.
+- **Hosting**: Cloudflare Pages ou Vercel só para o SPA estático (frontend). Backend inteiro é Supabase gerenciado — nenhum host de servidor a escolher/pagar.
+- **Jobs**: `pg_cron` + `pg_net` dentro do próprio Supabase agenda e dispara os alertas de prazo — chama a Edge Function quando a lógica passa de SQL puro (ex.: motor de contagem de dias úteis/feriado forense, envio de e-mail).
 
 ### Multi-tenancy
 
@@ -102,15 +102,16 @@ legal-manager/
 │   ├── web/            # SPA Vite (copiar components/ui, lib/masks, lib/utils do ManagerDesk)
 │   └── api/             # Fastify/Hono + Drizzle
 ├── packages/
-│   └── db/               # schema.ts + validations.ts (Postgres), migrations
+│   ├── schema/           # Zod schemas de domínio (tenants, clients, matters, deadlines...), usado por api e db
+│   └── db/               # schema.ts (Drizzle/Postgres) + migrations, consome packages/schema
 ```
 
 ## 8. Próximos passos
 
 1. Bootstrap `apps/web` (Vite+TS+Tailwind) copiando `components/ui`, `lib/masks.ts`, `lib/utils.ts`, `cpf-cnpj-validator` do ManagerDesk.
 2. Modelar `packages/db/schema.ts` em Postgres (tenants, users, clients, matter_catalog_items, matters, deadlines, payments, tags, audit_log) + RLS por `tenant_id`.
-3. Auth multi-tenant (Clerk/Auth.js) + scaffolding de organização/convite de usuário.
+3. Auth multi-tenant (Supabase Auth) + scaffolding de organização/convite de usuário.
 4. CRUD de Clientes + Catálogo de Matters + Matters (portar `service-dialog.tsx`, `financial-dialog.tsx`).
 5. Prazos: entidade `deadlines` + motor de contagem (dias úteis/feriado forense) + tela de listagem + alertas básicos (e-mail/in-app) — prioridade máxima, é o diferencial.
 6. Dashboard/Relatórios MVP focado em prazo (vence essa semana / vencido) — portar `dashboard.tsx`.
-7. Pipeline de deploy (Vercel/Fly.io + Postgres gerenciado).
+7. Pipeline de deploy (Cloudflare Pages/Vercel para o SPA + migrations Supabase).
