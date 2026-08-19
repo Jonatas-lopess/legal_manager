@@ -20,11 +20,7 @@
 - Portal do cliente — feature de venda, não de retenção nesse estágio
 - Documentos avançado (upload, e-signature, versionamento, template de petição) — editor de petição é projeto à parte
 
-## 2. Diferença estrutural crítica vs. ManagerDesk
-
-ManagerDesk é **local-first, single-tenant, P2P**: cada máquina tem seu próprio SQLite e sincroniza via CRDT (cr-sqlite) por LAN, sem servidor central, sem conceito de usuário/login. O novo produto é **SaaS multi-tenant cloud**: dado mora num servidor central, múltiplos escritórios (tenants) isolados entre si, múltiplos usuários por escritório com login/permissão. Essa diferença invalida toda a camada de sync/rede do projeto atual — o resto (UI, forms, padrões de schema, domínio de negócio) é diretamente aproveitável.
-
-## 3. O que reaproveitar do ManagerDesk
+## 2. O que reaproveitar do ManagerDesk
 
 | Item | Local no ManagerDesk | Como reaproveitar |
 |---|---|---|
@@ -39,7 +35,7 @@ ManagerDesk é **local-first, single-tenant, P2P**: cada máquina tem seu própr
 | Padrão de relatório | `src/pages/dashboard.tsx` (StatCard + `recharts` AreaChart + TableCard) | Base direta para os "Relatórios intuitivos" do MVP |
 | Reatividade de UI | `useLocalQuery` + `DBChangeHub` (qualquer write invalida toda query ativa) | Ideia reaproveitável, mecanismo não — ver §5 |
 
-## 4. O que NÃO reaproveitar (troca de raiz)
+## 3. O que NÃO reaproveitar (troca de raiz)
 
 | Item atual | Por quê não serve | Substituto |
 |---|---|---|
@@ -49,7 +45,7 @@ ManagerDesk é **local-first, single-tenant, P2P**: cada máquina tem seu própr
 | `managed-fs` / `client-folder.ts` (abre pasta no SO local) | Não existe "pasta local" em SaaS multi-dispositivo | Object storage (S3/R2) com URLs assinadas |
 | Ausência de auth (app é single-user) | SaaS precisa login + isolamento por escritório | Auth multi-tenant do zero (§6) |
 
-## 5. Arquitetura macro proposta
+## 4. Arquitetura macro proposta
 
 ### Stack
 
@@ -59,7 +55,7 @@ ManagerDesk é **local-first, single-tenant, P2P**: cada máquina tem seu própr
 - **Banco**: Supabase Postgres. Schema quase idêntico ao `schema.ts` atual — troca de dialeto (`sqlite-core`→`pg-core`). Drizzle usado só em dev/migração (`db:generate`/`db:push`); runtime não depende de conexão TCP direta (evita o erro de pooling/Hyperdrive já observado no `projeto_ebd` ao tentar Worker→Postgres direto).
 - **Auth multi-tenant**: Supabase Auth. Organização/tenant modelada como tabela própria (`tenants` + `users.tenant_id`), não via "Organizations" nativo (Supabase Auth não tem isso pronto como Clerk) — trade-off aceito em troca de unificar tudo (DB+Auth+Storage+Functions) num fornecedor só.
 - **Storage de arquivos**: Supabase Storage, prefixado por `tenant_id`, RLS também no bucket — substitui a pasta local de cliente.
-- **Hosting**: Cloudflare Pages ou Vercel só para o SPA estático (frontend). Backend inteiro é Supabase gerenciado — nenhum host de servidor a escolher/pagar.
+- **Hosting**: Cloudflare Pages só para o SPA estático (frontend). Backend inteiro é Supabase gerenciado — nenhum host de servidor a escolher/pagar.
 - **Jobs**: `pg_cron` + `pg_net` dentro do próprio Supabase agenda e dispara os alertas de prazo — chama a Edge Function quando a lógica passa de SQL puro (ex.: motor de contagem de dias úteis/feriado forense, envio de e-mail).
 - **Feriado forense — escopo**: motor de prazo cobre feriado nacional + estadual (não municipal/comarca no MVP). Fonte de dado (API, base estática mantida à mão, scraping de tribunal) ainda a decidir — ver §9.
 
@@ -85,7 +81,7 @@ Banco compartilhado, coluna `tenant_id` em toda tabela + Postgres RLS (`policy` 
 
 Reaproveitar o padrão `StatCard`/`TableCard`/`recharts` de `dashboard.tsx`. Relatórios mínimos: clientes ativos por status, matters por status, faturamento por período, prazos próximos/vencidos, volume por item de catálogo.
 
-## 6. Hooks para o pós-MVP (não implementar agora, só não fechar a porta)
+## 5. Hooks para o pós-MVP (não implementar agora, só não fechar a porta)
 
 - **Jusbrasil**: campo `external_id`/`integration_source` em `matters`/`deadlines` desde já; tabela `integrations` (config de API key por tenant), vazia no MVP.
 - **WhatsApp**: modelar `notifications`/`message_log` como canal genérico (hoje: e-mail/in-app; depois: WhatsApp) em vez de acoplar direto a um provedor.
@@ -95,24 +91,54 @@ Reaproveitar o padrão `StatCard`/`TableCard`/`recharts` de `dashboard.tsx`. Rel
 - **Financeiro avançado**: se demandar timesheet por hora ou honorário de êxito depois, evoluir `payments` sem quebrar o schema simples (campo de tipo de cobrança extensível).
 - **Desktop offline-first (P2P/CRDT)**: cogitado como possível diferencial (concorrente é tudo web puro), mas contradiz escopo reduzido — exige hub de sync central pra multi-tenant+auth (deixa de ser P2P puro), permissão por role fica difícil de garantir com merge CRDT client-trusted, soma superfície de Tauri multi-OS/updater/conflict resolution em cima do motor de prazo que é o foco real. Adiado; se retomado, avaliar como app desktop *adicional* sobre a API já pronta (§5), não como arquitetura de base.
 
-## 7. Estrutura de pastas sugerida (repo novo)
+## 6. Estrutura de pastas sugerida (repo novo)
 
 ```
 legal-manager/
 ├── apps/
-│   └── web/              # SPA Vite (copiar components/ui, lib/masks, lib/utils do ManagerDesk)
-│                         # fala direto com Postgres via supabase-js/PostgREST — sem backend próprio (§5)
+│   └── web/
+│       └── src/
+│           ├── modules/            # 1 pasta por bounded context — ver convenção abaixo
+│           │   ├── clients/
+│           │   ├── matters/
+│           │   ├── deadlines/
+│           │   ├── payments/
+│           │   └── catalog/
+│           └── components/ui/       # UI kit compartilhado (copiado do ManagerDesk), sem lógica de domínio
 ├── packages/
 │   ├── schema/           # Zod schemas de domínio (tenants, clients, matters, deadlines...), usado por web e db
 │   └── db/               # schema.ts (Drizzle/Postgres) + migrations, consome packages/schema
 └── supabase/
-    ├── functions/        # Edge Functions (Deno): webhook de pagamento, envio de e-mail de alerta
+    ├── functions/        # Edge Functions (Deno), mesma convenção de vertical slice, 1 pasta por contexto que precisa de segredo server-side
     └── migrations/        # gerado por drizzle-kit ou nativo Supabase CLI — a decidir
 ```
 
 Nota: versão anterior deste documento listava `apps/api/` (Fastify/Hono). Removido — contradizia §5, que já define client falando direto com Supabase sem backend dedicado. §5 é a fonte de verdade.
 
-## 8. Próximos passos
+### Convenção de vertical slice por bounded context
+
+Sem `apps/api` dedicado (§5), a lógica que normalmente ficaria num backend precisa de um lugar organizado dentro de `apps/web` (e, quando precisar de segredo, em `supabase/functions`). Convenção: **1 pasta por bounded context**, dividida em camadas nomeadas por sufixo de arquivo — não por sub-pasta `controllers/`, `services/` etc. (evita import cruzado entre pastas de camada de contextos diferentes).
+
+```
+apps/web/src/modules/deadlines/
+├── deadlines.controller.ts   # orquestra UI: page/hook que reage a evento, chama service, não sabe de Supabase
+├── deadlines.service.ts      # regra de negócio (ex.: motor de contagem de dias úteis) — orquestra repository + schema
+├── deadlines.repository.ts   # único arquivo do contexto que importa supabase-js / usa `.from("deadlines")`
+├── deadlines.schema.ts       # reexport/composição de packages/schema + refinamento específico do contexto
+└── components/               # dialogs, forms, tabelas ESPECÍFICOS do contexto (ex.: DeadlineDialog)
+```
+
+Mesma divisão dentro de `supabase/functions/<contexto>/` quando o contexto precisa de Edge Function (segredo, webhook, e-mail): `index.ts` (controller/entrypoint), `service.ts`, `repository.ts`.
+
+**Regras**:
+- Bounded contexts do MVP: `clients`, `matters`, `catalog` (matter_catalog_items), `deadlines`, `payments`, `tags`, `audit`. `tenants`/auth fica em contexto próprio (`auth` ou `tenants`), não espalhado.
+- `repository.ts` é a única camada autorizada a importar `supabase-js` e referenciar nome de tabela — nenhum outro arquivo do contexto (ou de fora dele) faz `.from(...)` direto. Isso mantém a troca de fonte de dado (ex.: mock em teste) num lugar só.
+- `service.ts` não importa `supabase-js` — só chama o `repository.ts` do próprio contexto. Regra de negócio (motor de prazo, cálculo de status) mora aqui, não no controller nem no repository.
+- `controller.ts` não faz query nem regra de negócio — só traduz evento de UI (ou request de Edge Function) em chamada de `service.ts` e estado de UI/response.
+- Contexto A não importa `repository.ts` de contexto B — se precisar de dado de outro domínio (ex.: `deadlines` precisa de `matter`), chama o `service.ts` público de B. Mantém o isolamento que RLS garante a nível de banco também a nível de código.
+- `packages/db/schema.ts` continua único e compartilhado (é o schema físico da tabela) — a pasta `repository.ts` de cada contexto não duplica definição de tabela, só a consome.
+
+## 7. Próximos passos
 
 1. Bootstrap `apps/web` (Vite+TS+Tailwind) copiando `components/ui`, `lib/masks.ts`, `lib/utils.ts`, `cpf-cnpj-validator` do ManagerDesk.
 2. Modelar `packages/db/schema.ts` em Postgres (tenants, users, clients, matter_catalog_items, matters, deadlines, payments, tags, audit_log) + RLS por `tenant_id`.
@@ -122,7 +148,7 @@ Nota: versão anterior deste documento listava `apps/api/` (Fastify/Hono). Remov
 6. Dashboard/Relatórios MVP focado em prazo (vence essa semana / vencido) — portar `dashboard.tsx`.
 7. Pipeline de deploy (Cloudflare Pages/Vercel para o SPA + migrations Supabase).
 
-## 9. Decisões de negócio em aberto
+## 8. Decisões de negócio em aberto
 
 - **Modelo de cobrança**: preço, plano (per-seat vs. flat por tenant), gateway de pagamento (Stripe / Mercado Pago), trial. Bloqueia o webhook de pagamento já previsto em §5. **A decidir.**
 - **Go-to-market / onboarding**: self-service signup vs. venda assistida, fluxo de criação de tenant novo, convite de usuário. **A decidir.**
