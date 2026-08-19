@@ -6,12 +6,19 @@
 
 **Produto**: SaaS de gestão para escritórios de advocacia.
 
-**MVP**: Controle de Clientes + Controle de Serviços (catálogo personalizado + prazos) + Relatórios.
+**MVP (escopo reduzido, foco em diferencial)**: Controle de Clientes + Controle de Matters (catálogo personalizado) + Gestão de Prazos (motor de contagem — diferencial do produto) + Relatórios focados em prazo (o que vence essa semana / vencido).
+
+**Diferencial escolhido**: motor de prazos processuais bem feito (dias úteis, feriado forense, alerta confiável) + relatório operacional em cima disso. Dor real, concorrente costuma ser fraco ou genérico nisso. Resto do escopo original vira versão simples ou é adiado — ver abaixo.
+
+**Reduzido a versão simples no MVP** (não cortado, só sem complexidade extra):
+- Financeiro: valor fixo + status pago/pendente. Sem timesheet por hora, sem honorário de êxito, sem split — commodity, todo concorrente tem, não é onde construir diferencial primeiro.
 
 **Fora do MVP** (deixar hooks arquiteturais, não construir agora):
-- Acompanhamento de processos (integração Jusbrasil ou similar)
+- Acompanhamento de processos (integração Jusbrasil, PJe, Projudi ou similar) — API não-oficial/scraping frágil, alto custo de engenharia
 - Integração WhatsApp (mensagens automáticas)
 - Agente de IA para referência jurídica
+- Portal do cliente — feature de venda, não de retenção nesse estágio
+- Documentos avançado (upload, e-signature, versionamento, template de petição) — editor de petição é projeto à parte
 
 ## 2. Diferença estrutural crítica vs. ManagerDesk
 
@@ -26,7 +33,7 @@ ManagerDesk é **local-first, single-tenant, P2P**: cada máquina tem seu própr
 | Padrão de schema + validação | `src/db/schema.ts` → `drizzle-zod` em `validations.ts` | Mesmo padrão Drizzle, trocar `sqlite-core` por `pg-core` |
 | Padrão de formulário | `service-dialog.tsx`, `financial-dialog.tsx` (react-hook-form + zodResolver) | Reaproveitar arquitetura de dialog/form, trocar campos |
 | Máscaras BR | `src/lib/masks.ts` (CPF, CNPJ, telefone, moeda) + pacote `cpf-cnpj-validator` | Direto — domínio brasileiro é o mesmo |
-| Tags | `tagsTable` + `service_tags` (join table) | Reaproveitar para categorizar processos/serviços |
+| Tags | `tagsTable` + `matter_tags` (join table) | Reaproveitar para categorizar matters |
 | Auditoria | `logsTable` + `src/lib/logger.ts` | Ainda mais crítico em escritório jurídico (sigilo, compliance) — evoluir para audit log com `user_id` |
 | Import em massa | `src/components/panel/csv-import-dialog.tsx` | Migração de carteira de clientes existente |
 | Padrão de relatório | `src/pages/dashboard.tsx` (StatCard + `recharts` AreaChart + TableCard) | Base direta para os "Relatórios intuitivos" do MVP |
@@ -64,23 +71,28 @@ Banco compartilhado, coluna `tenant_id` em toda tabela + Postgres RLS (`policy` 
 - `tenants` — escritório
 - `users` — `tenant_id`, `role`
 - `clients` — evolução de `clientsTable`: mantém CPF/CNPJ, soma campos jurídicos (RG, endereço, estado civil, profissão, parte contrária, dados de procuração)
-- `service_catalog_items` — **novo**: hoje é `serviceTypesArray` (enum hardcoded no schema); no SaaS vira tabela CRUD por tenant, já que um dos requisitos do MVP é "catálogo personalizado"
-- `services` — evolução de `servicesTable`: `status`, `client_id`, FK pro catálogo em vez de enum fixo
-- `deadlines` — **novo**: hoje `final_date`/`restitution_date` são campos soltos em `services`; domínio jurídico precisa de N prazos por processo, cada um com tipo e alerta — essa é a peça central de "Gestão de Prazos"
-- `payments` — reaproveita `paymentsTable` quase igual
-- `tags` / `service_tags` — reaproveita igual
-- `documents` — **novo**: metadata + referência de storage (substitui a pasta local do SO)
+- `matter_catalog_items` — **novo**: hoje é `serviceTypesArray` (enum hardcoded no schema); no SaaS vira tabela CRUD por tenant, já que um dos requisitos do MVP é "catálogo personalizado"
+- `matters` — evolução de `servicesTable`: `status`, `client_id`, FK pro catálogo em vez de enum fixo
+- `deadlines` — **novo**: hoje `final_date`/`restitution_date` são campos soltos em `matters`; domínio jurídico precisa de N prazos por processo, cada um com tipo e alerta — essa é a peça central de "Gestão de Prazos"
+- `payments` — reaproveita `paymentsTable` quase igual, versão simples: valor fixo + status pago/pendente (sem timesheet por hora no MVP)
+- `tags` / `matter_tags` — reaproveita igual
 - `audit_log` — evolução de `logsTable`, soma `user_id`
+
+`documents` (metadata + referência de storage) sai do MVP — ver §6.
 
 ### Relatórios (MVP)
 
-Reaproveitar o padrão `StatCard`/`TableCard`/`recharts` de `dashboard.tsx`. Relatórios mínimos: clientes ativos por status, serviços por status, faturamento por período, prazos próximos/vencidos, volume por item de catálogo.
+Reaproveitar o padrão `StatCard`/`TableCard`/`recharts` de `dashboard.tsx`. Relatórios mínimos: clientes ativos por status, matters por status, faturamento por período, prazos próximos/vencidos, volume por item de catálogo.
 
 ## 6. Hooks para o pós-MVP (não implementar agora, só não fechar a porta)
 
-- **Jusbrasil**: campo `external_id`/`integration_source` em `services`/`deadlines` desde já; tabela `integrations` (config de API key por tenant), vazia no MVP.
+- **Jusbrasil**: campo `external_id`/`integration_source` em `matters`/`deadlines` desde já; tabela `integrations` (config de API key por tenant), vazia no MVP.
 - **WhatsApp**: modelar `notifications`/`message_log` como canal genérico (hoje: e-mail/in-app; depois: WhatsApp) em vez de acoplar direto a um provedor.
 - **Agente de IA**: nenhum hook técnico necessário agora — só manter os dados de cliente/serviço/histórico bem estruturados facilita RAG depois.
+- **Documentos**: entidade `documents` (metadata + referência de storage, prefixada por `tenant_id`) fica fora do schema inicial; adicionar quando houver demanda real de anexo.
+- **Portal do cliente**: nenhum hook técnico necessário agora — auth multi-tenant do §5 já suporta role adicional (`client`) depois sem redesenho.
+- **Financeiro avançado**: se demandar timesheet por hora ou honorário de êxito depois, evoluir `payments` sem quebrar o schema simples (campo de tipo de cobrança extensível).
+- **Desktop offline-first (P2P/CRDT)**: cogitado como possível diferencial (concorrente é tudo web puro), mas contradiz escopo reduzido — exige hub de sync central pra multi-tenant+auth (deixa de ser P2P puro), permissão por role fica difícil de garantir com merge CRDT client-trusted, soma superfície de Tauri multi-OS/updater/conflict resolution em cima do motor de prazo que é o foco real. Adiado; se retomado, avaliar como app desktop *adicional* sobre a API já pronta (§5), não como arquitetura de base.
 
 ## 7. Estrutura de pastas sugerida (repo novo)
 
@@ -96,9 +108,9 @@ legal-manager/
 ## 8. Próximos passos
 
 1. Bootstrap `apps/web` (Vite+TS+Tailwind) copiando `components/ui`, `lib/masks.ts`, `lib/utils.ts`, `cpf-cnpj-validator` do ManagerDesk.
-2. Modelar `packages/db/schema.ts` em Postgres (tenants, users, clients, service_catalog_items, services, deadlines, payments, tags, documents, audit_log) + RLS por `tenant_id`.
+2. Modelar `packages/db/schema.ts` em Postgres (tenants, users, clients, matter_catalog_items, matters, deadlines, payments, tags, audit_log) + RLS por `tenant_id`.
 3. Auth multi-tenant (Clerk/Auth.js) + scaffolding de organização/convite de usuário.
-4. CRUD de Clientes + Catálogo de Serviços + Serviços/Processos (portar `service-dialog.tsx`, `financial-dialog.tsx`).
-5. Prazos: entidade `deadlines` + tela de listagem + alertas básicos (e-mail/in-app).
-6. Dashboard/Relatórios MVP (portar `dashboard.tsx`).
+4. CRUD de Clientes + Catálogo de Matters + Matters (portar `service-dialog.tsx`, `financial-dialog.tsx`).
+5. Prazos: entidade `deadlines` + motor de contagem (dias úteis/feriado forense) + tela de listagem + alertas básicos (e-mail/in-app) — prioridade máxima, é o diferencial.
+6. Dashboard/Relatórios MVP focado em prazo (vence essa semana / vencido) — portar `dashboard.tsx`.
 7. Pipeline de deploy (Vercel/Fly.io + Postgres gerenciado).
