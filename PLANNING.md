@@ -61,6 +61,7 @@ ManagerDesk é **local-first, single-tenant, P2P**: cada máquina tem seu própr
 - **Storage de arquivos**: Supabase Storage, prefixado por `tenant_id`, RLS também no bucket — substitui a pasta local de cliente.
 - **Hosting**: Cloudflare Pages ou Vercel só para o SPA estático (frontend). Backend inteiro é Supabase gerenciado — nenhum host de servidor a escolher/pagar.
 - **Jobs**: `pg_cron` + `pg_net` dentro do próprio Supabase agenda e dispara os alertas de prazo — chama a Edge Function quando a lógica passa de SQL puro (ex.: motor de contagem de dias úteis/feriado forense, envio de e-mail).
+- **Feriado forense — escopo**: motor de prazo cobre feriado nacional + estadual (não municipal/comarca no MVP). Fonte de dado (API, base estática mantida à mão, scraping de tribunal) ainda a decidir — ver §9.
 
 ### Multi-tenancy
 
@@ -69,7 +70,7 @@ Banco compartilhado, coluna `tenant_id` em toda tabela + Postgres RLS (`policy` 
 ### Modelo de dados macro (MVP)
 
 - `tenants` — escritório
-- `users` — `tenant_id`, `role`
+- `users` — `tenant_id`, `role` (`admin` / `advogado` / `secretario` — matriz de permissão por papel ainda a decidir, ver §9)
 - `clients` — evolução de `clientsTable`: mantém CPF/CNPJ, soma campos jurídicos (RG, endereço, estado civil, profissão, parte contrária, dados de procuração)
 - `matter_catalog_items` — **novo**: hoje é `serviceTypesArray` (enum hardcoded no schema); no SaaS vira tabela CRUD por tenant, já que um dos requisitos do MVP é "catálogo personalizado"
 - `matters` — evolução de `servicesTable`: `status`, `client_id`, FK pro catálogo em vez de enum fixo
@@ -99,12 +100,17 @@ Reaproveitar o padrão `StatCard`/`TableCard`/`recharts` de `dashboard.tsx`. Rel
 ```
 legal-manager/
 ├── apps/
-│   ├── web/            # SPA Vite (copiar components/ui, lib/masks, lib/utils do ManagerDesk)
-│   └── api/             # Fastify/Hono + Drizzle
+│   └── web/              # SPA Vite (copiar components/ui, lib/masks, lib/utils do ManagerDesk)
+│                         # fala direto com Postgres via supabase-js/PostgREST — sem backend próprio (§5)
 ├── packages/
-│   ├── schema/           # Zod schemas de domínio (tenants, clients, matters, deadlines...), usado por api e db
+│   ├── schema/           # Zod schemas de domínio (tenants, clients, matters, deadlines...), usado por web e db
 │   └── db/               # schema.ts (Drizzle/Postgres) + migrations, consome packages/schema
+└── supabase/
+    ├── functions/        # Edge Functions (Deno): webhook de pagamento, envio de e-mail de alerta
+    └── migrations/        # gerado por drizzle-kit ou nativo Supabase CLI — a decidir
 ```
+
+Nota: versão anterior deste documento listava `apps/api/` (Fastify/Hono). Removido — contradizia §5, que já define client falando direto com Supabase sem backend dedicado. §5 é a fonte de verdade.
 
 ## 8. Próximos passos
 
@@ -115,3 +121,25 @@ legal-manager/
 5. Prazos: entidade `deadlines` + motor de contagem (dias úteis/feriado forense) + tela de listagem + alertas básicos (e-mail/in-app) — prioridade máxima, é o diferencial.
 6. Dashboard/Relatórios MVP focado em prazo (vence essa semana / vencido) — portar `dashboard.tsx`.
 7. Pipeline de deploy (Cloudflare Pages/Vercel para o SPA + migrations Supabase).
+
+## 9. Decisões de negócio em aberto
+
+- **Modelo de cobrança**: preço, plano (per-seat vs. flat por tenant), gateway de pagamento (Stripe / Mercado Pago), trial. Bloqueia o webhook de pagamento já previsto em §5. **A decidir.**
+- **Go-to-market / onboarding**: self-service signup vs. venda assistida, fluxo de criação de tenant novo, convite de usuário. **A decidir.**
+- **Matriz de permissão RBAC**: papéis definidos (`admin` / `advogado` / `secretario`), matriz de o-que-cada-papel-pode-fazer ainda não desenhada (CRUD de matter, acesso a financeiro, acesso a matter de outro advogado do mesmo tenant, gestão de usuário). **A decidir**, antes do passo 3 de §8 (auth + convite).
+- **Fonte de dado de feriado forense** (pesquisado): nenhuma API cobre feriado forense de verdade — BrasilAPI, Invertexto, FeriadosAPI, feriados.dev cobrem só feriado **civil** nacional/estadual/municipal, que não pega recesso decretado por tribunal, ponto facultativo do Judiciário, nem granularidade por comarca (ex.: TJSP tem portaria anual própria, por município). CNJ (Resolução 244/2016) normatiza o recesso nacional mas não expõe dado estruturado; AASP agrega link pra portaria de cada um dos 27 TJs, sem API, cobertura incompleta ("caráter meramente supletivo", vários tribunais "não divulgado em meios oficiais"). Scraping direto de 27 portais é frágil demais pra base do diferencial do produto.
+  **Decisão**: híbrido — API civil paga (FeriadosAPI, melhor custo/cobertura: grátis nacional/estadual/capitais, Professional $49/mês ilimitado) cobre feriado nacional+estadual civil; tabela própria (`forensic_holidays` ou similar) curada manualmente por UF cobre recesso forense/portaria de tribunal, atualizada 1x/ano usando AASP como ponto de partida. Cliente final (escritório) pode também sobrescrever/complementar por comarca, já que feriado municipal só suspende prazo na comarca local.
+
+### LGPD / sigilo profissional (OAB) — pontos de atenção
+
+Dado tratado aqui é sensível por natureza: cliente do escritório, parte contrária (terceiro sem vínculo contratual direto), eventualmente dado de processo penal. Pontos a resolver antes de lançar, não só documentar:
+
+- **Base legal por tipo de titular**: cliente do tenant (execução de contrato) vs. parte contrária (legítimo interesse — precisa de transparência, não dá pra pedir consentimento de quem não é titular da conta).
+- **Papel do escritório vs. da plataforma**: escritório (tenant) é controlador dos dados de seus clientes; esta plataforma SaaS é operadora. Precisa de contrato/DPA formalizando isso — não é só engenharia.
+- **Sigilo profissional (Estatuto da OAB, art. 7º/34 + Código de Ética)**: isolamento entre tenants via RLS (§5) cobre o caso óbvio; decidir se precisa também de isolamento *dentro* do tenant (advogado A não vê matter de advogado B do mesmo escritório) — depende da matriz de RBAC acima.
+- **Retenção de dado**: processo findo não pode ser apagado antes do prazo prescricional aplicável (varia por matéria, geralmente 5–10 anos) — direito ao esquecimento do titular esbarra nessa obrigação de guarda. Política de retenção precisa estar no schema (soft-delete + prazo), não só no contrato.
+- **Dado sensível (LGPD art. 5º, II)**: se o MVP aceitar registro de processo penal/dado de saúde ligado ao caso, entra em categoria de tratamento mais restrita — decidir se isso é escopo do MVP ou fica de fora.
+- **Residência/hospedagem de dado**: região do projeto Supabase — sem exigência legal geral de residência no Brasil pra LGPD (diferente de setor público), mas boa prática avaliar região mais próxima/com melhor postura de compliance.
+- **Direitos do titular**: acesso, correção, exclusão, portabilidade — quem processa o pedido (plataforma ou escritório)? Fluxo não desenhado ainda.
+- **Resposta a incidente**: obrigação de notificar ANPD e titulares em caso de vazamento (art. 48) — nenhum plano de incident response desenhado.
+- **Auditoria**: `audit_log` (§3/§5) já ajuda a demonstrar accountability — não é suficiente sozinho, mas é a base certa.
