@@ -7,3 +7,10 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
 - Status: `ready-for-agent`
 - Spec: `.scratch/postgres-schema-rls/spec.md`
 - Issues: none filed yet
+
+## tenants-auth-invite
+
+- Status: `ready-for-agent`
+- Spec: `.scratch/tenants-auth-invite/spec.md`
+- Issues: none filed yet
+- Depends on: `postgres-schema-rls`
