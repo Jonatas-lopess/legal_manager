@@ -33,3 +33,9 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
   - `04-tags-matter-tagging.md` — ready-for-agent — blocked by 03
   - `05-payments-matter-scoped-role-gated.md` — ready-for-agent — blocked by 03, tenants-auth-invite/02
 - Depends on: `postgres-schema-rls`, `tenants-auth-invite`
+
+## deadlines-engine-alerts
+
+- Status: `ready-for-agent`
+- Spec: `.scratch/deadlines-engine-alerts/spec.md`
+- Depends on: `postgres-schema-rls`, `tenants-auth-invite`, `clients-catalog-matters-crud`
