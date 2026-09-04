@@ -38,4 +38,10 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
 
 - Status: `ready-for-agent`
 - Spec: `.scratch/deadlines-engine-alerts/spec.md`
+- Issues:
+  - `01-deadlines-schema-holidays-notifications.md` — ready-for-agent — blocked by postgres-schema-rls/01, postgres-schema-rls/03
+  - `02-counting-engine-core.md` — ready-for-agent — blocked by 01
+  - `03-deadlines-crud-listing-tags.md` — ready-for-agent — blocked by 02
+  - `04-civil-holiday-sync.md` — ready-for-agent — blocked by 01
+  - `05-deadline-alerts.md` — ready-for-agent — blocked by 03
 - Depends on: `postgres-schema-rls`, `tenants-auth-invite`, `clients-catalog-matters-crud`
