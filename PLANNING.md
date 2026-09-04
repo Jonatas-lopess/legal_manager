@@ -61,7 +61,7 @@
 
 ### Multi-tenancy
 
-Banco compartilhado, coluna `tenant_id` em toda tabela + Postgres RLS (`policy` filtrando por `current_setting('app.tenant_id')`). Mais simples de operar que schema-per-tenant; volume de escritórios jurídicos não justifica a complexidade de isolamento físico.
+Banco compartilhado, coluna `tenant_id` em toda tabela + Postgres RLS. Sem backend dedicado (client fala direto com PostgREST), então a policy não pode depender de `SET LOCAL`/`current_setting` — resolve `tenant_id` via função `SECURITY DEFINER` que consulta `public.users` por `auth.uid()` (ver ADR-0005). Mais simples de operar que schema-per-tenant; volume de escritórios jurídicos não justifica a complexidade de isolamento físico.
 
 ### Modelo de dados macro (MVP)
 
@@ -113,7 +113,7 @@ legal-manager/
 │   └── db/               # schema.ts (Drizzle/Postgres) + migrations, consome packages/schema
 └── supabase/
     ├── functions/        # Edge Functions (Deno), mesma convenção de vertical slice, 1 pasta por contexto que precisa de segredo server-side
-    └── migrations/        # gerado por drizzle-kit ou nativo Supabase CLI — a decidir
+    └── migrations/        # decidido: gerado por drizzle-kit (`db:generate`), aplicado via Supabase CLI — packages/db/schema.ts continua fonte única
 ```
 
 Nota: versão anterior deste documento listava `apps/api/` (Fastify/Hono). Removido — contradizia §5, que já define client falando direto com Supabase sem backend dedicado. §5 é a fonte de verdade.
