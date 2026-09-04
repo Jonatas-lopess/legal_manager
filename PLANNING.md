@@ -57,7 +57,7 @@
 - **Storage de arquivos**: Supabase Storage, prefixado por `tenant_id`, RLS também no bucket — substitui a pasta local de cliente.
 - **Hosting**: Cloudflare Pages só para o SPA estático (frontend). Backend inteiro é Supabase gerenciado — nenhum host de servidor a escolher/pagar.
 - **Jobs**: `pg_cron` + `pg_net` dentro do próprio Supabase agenda e dispara os alertas de prazo — chama a Edge Function quando a lógica passa de SQL puro (ex.: motor de contagem de dias úteis/feriado forense, envio de e-mail).
-- **Feriado forense — escopo**: motor de prazo cobre feriado nacional + estadual (não municipal/comarca no MVP). Fonte de dado (API, base estática mantida à mão, scraping de tribunal) ainda a decidir — ver §9.
+- **Feriado forense — escopo**: motor de prazo cobre feriado nacional + estadual (não municipal/comarca no MVP). Fonte de dado — decidida, ver §8.
 
 ### Multi-tenancy
 
@@ -66,14 +66,16 @@ Banco compartilhado, coluna `tenant_id` em toda tabela + Postgres RLS (`policy` 
 ### Modelo de dados macro (MVP)
 
 - `tenants` — escritório
-- `users` — `tenant_id`, `role` (`admin` / `advogado` / `secretario` — matriz de permissão por papel ainda a decidir, ver §9)
-- `clients` — evolução de `clientsTable`: mantém CPF/CNPJ, soma campos jurídicos (RG, endereço, estado civil, profissão, parte contrária, dados de procuração)
+- `users` — `tenant_id`, `role` (`admin` / `advogado` / `secretario` — capacidades base decididas, matriz completa ainda a decidir, ver §8)
+- `clients` — evolução de `clientsTable`: mantém CPF/CNPJ, soma campos jurídicos (RG, endereço, estado civil, profissão, parte contrária, dados de procuração). `status`: `ativo` / `inativo`.
 - `matter_catalog_items` — **novo**: hoje é `serviceTypesArray` (enum hardcoded no schema); no SaaS vira tabela CRUD por tenant, já que um dos requisitos do MVP é "catálogo personalizado"
-- `matters` — evolução de `servicesTable`: `status`, `client_id`, FK pro catálogo em vez de enum fixo
-- `deadlines` — **novo**: hoje `final_date`/`restitution_date` são campos soltos em `matters`; domínio jurídico precisa de N prazos por processo, cada um com tipo e alerta — essa é a peça central de "Gestão de Prazos"
+- `matters` — evolução de `servicesTable`: `client_id`, FK pro catálogo em vez de enum fixo, `uf` (obrigatório) + `comarca`/`municipio` (opcional) — motor de prazo lê a localização do matter, nunca do client, já que um client pode ter matters em comarcas diferentes (ver ADR-0002). `status`: `rascunho` / `em_andamento` / `concluido` / `arquivado` — em `rascunho`, `client_id` e o item de catálogo são nullable; passam a obrigatórios ao promover para `em_andamento` (ver ADR-0004).
+- `deadlines` — **novo**: hoje `final_date`/`restitution_date` são campos soltos em `matters`; domínio jurídico precisa de N prazos por processo, cada um com tipo e alerta — essa é a peça central de "Gestão de Prazos". Colunas `is_fatal` (bool) e `counting_mode` (`dias_uteis`/`dias_corridos`) lidas direto pelo motor de contagem — sem catálogo de tipos, sem depender de tag editável pelo tenant (ver ADR-0003). Rotulagem livre (nome do ato, urgência) via `tags`/`matter_tags` estendido para `deadlines`, cosmético, nunca lido pelo motor. Alertas MVP: limiar fixo (5 dias úteis e 1 dia útil antes do vencimento), canais e-mail + in-app; sem configuração por tenant no MVP.
 - `payments` — reaproveita `paymentsTable` quase igual, versão simples: valor fixo + status pago/pendente (sem timesheet por hora no MVP)
-- `tags` / `matter_tags` — reaproveita igual
+- `tags` / `matter_tags` — reaproveita igual, estendido também para `deadlines` (ver acima)
 - `audit_log` — evolução de `logsTable`, soma `user_id`
+
+Retenção (ver §8, LGPD): `clients`/`matters` somam `deleted_at` (soft-delete) + `retention_until` (calculado a partir do prazo prescricional aplicável) — exclusão física bloqueada a nível de schema antes de `retention_until`. Fluxo de atendimento a titular (acesso/correção/exclusão) continua manual no MVP; self-service adiado.
 
 `documents` (metadata + referência de storage) sai do MVP — ver §6.
 
@@ -89,6 +91,7 @@ Reaproveitar o padrão `StatCard`/`TableCard`/`recharts` de `dashboard.tsx`. Rel
 - **Documentos**: entidade `documents` (metadata + referência de storage, prefixada por `tenant_id`) fica fora do schema inicial; adicionar quando houver demanda real de anexo.
 - **Portal do cliente**: nenhum hook técnico necessário agora — auth multi-tenant do §5 já suporta role adicional (`client`) depois sem redesenho.
 - **Financeiro avançado**: se demandar timesheet por hora ou honorário de êxito depois, evoluir `payments` sem quebrar o schema simples (campo de tipo de cobrança extensível).
+- **Custom roles por tenant**: MVP fixa 3 papéis (`admin`/`advogado`/`secretario`, matriz completa ainda a decidir — ver §8) sem isolamento entre `advogado`s do mesmo tenant (ADR-0001). Papéis customizáveis por tenant é extensão provável, não construir agora — checar quando a matriz completa for desenhada que a camada de permissão não fica hardcoded nos 3 papéis a ponto de dificultar a extensão.
 - **Desktop offline-first (P2P/CRDT)**: cogitado como possível diferencial (concorrente é tudo web puro), mas contradiz escopo reduzido — exige hub de sync central pra multi-tenant+auth (deixa de ser P2P puro), permissão por role fica difícil de garantir com merge CRDT client-trusted, soma superfície de Tauri multi-OS/updater/conflict resolution em cima do motor de prazo que é o foco real. Adiado; se retomado, avaliar como app desktop *adicional* sobre a API já pronta (§5), não como arquitetura de base.
 
 ## 6. Estrutura de pastas sugerida (repo novo)
@@ -150,9 +153,9 @@ Mesma divisão dentro de `supabase/functions/<contexto>/` quando o contexto prec
 
 ## 8. Decisões de negócio em aberto
 
-- **Modelo de cobrança**: preço, plano (per-seat vs. flat por tenant), gateway de pagamento (Stripe / Mercado Pago), trial. Bloqueia o webhook de pagamento já previsto em §5. **A decidir.**
-- **Go-to-market / onboarding**: self-service signup vs. venda assistida, fluxo de criação de tenant novo, convite de usuário. **A decidir.**
-- **Matriz de permissão RBAC**: papéis definidos (`admin` / `advogado` / `secretario`), matriz de o-que-cada-papel-pode-fazer ainda não desenhada (CRUD de matter, acesso a financeiro, acesso a matter de outro advogado do mesmo tenant, gestão de usuário). **A decidir**, antes do passo 3 de §8 (auth + convite).
+- **Modelo de cobrança**: **decidido — fora do MVP.** Lançar com cobrança manual/beta (fatura fora do app); sem webhook de pagamento nem gateway na v1. Revisitar plano/gateway/trial quando houver validação de mercado.
+- **Go-to-market / onboarding**: **decidido — onboarding assistido.** Sem signup self-service na v1; tenant + primeiro `admin` provisionado manualmente (script ou operação direta). Revisitar se/quando o número de escritórios não couber mais em provisionamento manual.
+- **Matriz de permissão RBAC**: papéis base decididos para o MVP — `admin` (CRUD completo + gestão de usuário + financeiro), `advogado` (CRUD em clients/matters/deadlines/payments, sem gestão de usuário), `secretario` (CRUD em clients/matters/deadlines, sem payments, sem gestão de usuário). Sem isolamento entre `advogado`s do mesmo tenant (ADR-0001). Matriz completa e papéis customizáveis por tenant seguem **a decidir** (ver hook em §5) — não bloqueia o passo 3 de §7 (auth + convite), que usa a matriz base acima.
 - **Fonte de dado de feriado forense** (pesquisado): nenhuma API cobre feriado forense de verdade — BrasilAPI, Invertexto, FeriadosAPI, feriados.dev cobrem só feriado **civil** nacional/estadual/municipal, que não pega recesso decretado por tribunal, ponto facultativo do Judiciário, nem granularidade por comarca (ex.: TJSP tem portaria anual própria, por município). CNJ (Resolução 244/2016) normatiza o recesso nacional mas não expõe dado estruturado; AASP agrega link pra portaria de cada um dos 27 TJs, sem API, cobertura incompleta ("caráter meramente supletivo", vários tribunais "não divulgado em meios oficiais"). Scraping direto de 27 portais é frágil demais pra base do diferencial do produto.
   **Decisão**: híbrido — API civil paga (FeriadosAPI, melhor custo/cobertura: grátis nacional/estadual/capitais, Professional $49/mês ilimitado) cobre feriado nacional+estadual civil; tabela própria (`forensic_holidays` ou similar) curada manualmente por UF cobre recesso forense/portaria de tribunal, atualizada 1x/ano usando AASP como ponto de partida. Cliente final (escritório) pode também sobrescrever/complementar por comarca, já que feriado municipal só suspende prazo na comarca local.
 
@@ -163,9 +166,9 @@ Dado tratado aqui é sensível por natureza: cliente do escritório, parte contr
 - **Base legal por tipo de titular**: cliente do tenant (execução de contrato) vs. parte contrária (legítimo interesse — precisa de transparência, não dá pra pedir consentimento de quem não é titular da conta).
 - **Papel do escritório vs. da plataforma**: escritório (tenant) é controlador dos dados de seus clientes; esta plataforma SaaS é operadora. Precisa de contrato/DPA formalizando isso — não é só engenharia.
 - **Sigilo profissional (Estatuto da OAB, art. 7º/34 + Código de Ética)**: isolamento entre tenants via RLS (§5) cobre o caso óbvio; decidir se precisa também de isolamento *dentro* do tenant (advogado A não vê matter de advogado B do mesmo escritório) — depende da matriz de RBAC acima.
-- **Retenção de dado**: processo findo não pode ser apagado antes do prazo prescricional aplicável (varia por matéria, geralmente 5–10 anos) — direito ao esquecimento do titular esbarra nessa obrigação de guarda. Política de retenção precisa estar no schema (soft-delete + prazo), não só no contrato.
-- **Dado sensível (LGPD art. 5º, II)**: se o MVP aceitar registro de processo penal/dado de saúde ligado ao caso, entra em categoria de tratamento mais restrita — decidir se isso é escopo do MVP ou fica de fora.
-- **Residência/hospedagem de dado**: região do projeto Supabase — sem exigência legal geral de residência no Brasil pra LGPD (diferente de setor público), mas boa prática avaliar região mais próxima/com melhor postura de compliance.
-- **Direitos do titular**: acesso, correção, exclusão, portabilidade — quem processa o pedido (plataforma ou escritório)? Fluxo não desenhado ainda.
-- **Resposta a incidente**: obrigação de notificar ANPD e titulares em caso de vazamento (art. 48) — nenhum plano de incident response desenhado.
+- **Retenção de dado**: **decidido** — schema soma `deleted_at` + `retention_until` em `clients`/`matters` (ver §4), exclusão física bloqueada antes do prazo prescricional aplicável. Não é só contrato, está no schema desde o MVP.
+- **Dado sensível (LGPD art. 5º, II)**: **decidido — dentro do escopo do MVP.** Registro de matter penal/dado de saúde ligado ao caso é permitido sem gate técnico especial na v1 (bloquear cortaria mercado real); RLS + `audit_log` seguem como base de defesa. Nota de política/ToS, não restrição de schema.
+- **Residência/hospedagem de dado**: região do projeto Supabase — sem exigência legal geral de residência no Brasil pra LGPD (diferente de setor público), mas boa prática avaliar região mais próxima/com melhor postura de compliance. **A decidir**, não bloqueia engenharia do MVP.
+- **Direitos do titular**: **decidido — manual no MVP.** Acesso/correção/exclusão tratados manualmente pelo suporte (escritório é controlador, plataforma é operadora); UI self-service explicitamente adiada (opção C considerada e rejeitada por escopo, ver retenção acima). Formalizar processo documentado antes do lançamento público.
+- **Resposta a incidente**: obrigação de notificar ANPD e titulares em caso de vazamento (art. 48) — nenhum plano de incident response desenhado. **A decidir**, item de processo/ops, não bloqueia engenharia do MVP.
 - **Auditoria**: `audit_log` (§3/§5) já ajuda a demonstrar accountability — não é suficiente sozinho, mas é a base certa.
