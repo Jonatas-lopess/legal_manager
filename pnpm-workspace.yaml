@@ -1,0 +1,10 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+allowBuilds:
+  esbuild: true
+  # Native speedup for eslint-import-resolver-typescript; its JS fallback
+  # already resolves correctly, so skip the postinstall build rather than
+  # run an unreviewed native script.
+  unrs-resolver: false

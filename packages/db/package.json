@@ -1,0 +1,20 @@
+{
+  "name": "@legal-manager/db",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./src/schema.ts",
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "push": "drizzle-kit push",
+    "studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@legal-manager/schema": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "drizzle-zod": "^0.8.3"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.10"
+  }
+}

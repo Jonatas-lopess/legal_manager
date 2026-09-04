@@ -1,0 +1,25 @@
+{
+  "name": "legal-manager",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm -r build",
+    "preview": "pnpm --filter web preview",
+    "test": "pnpm -r test",
+    "lint": "eslint .",
+    "db:generate": "pnpm --filter @legal-manager/db generate",
+    "db:push": "pnpm --filter @legal-manager/db push",
+    "db:studio": "pnpm --filter @legal-manager/db studio"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.9.1",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-boundaries": "^7.2.0",
+    "eslint-plugin-react": "^7.37.5",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.68.0"
+  }
+}
