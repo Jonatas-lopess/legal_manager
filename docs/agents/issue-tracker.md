@@ -12,7 +12,11 @@ Issues and specs for this repo live as markdown files in `.scratch/`.
 
 ## When a skill says "publish to the issue tracker"
 
-Create a new file under `.scratch/<feature-slug>/` (creating the directory if needed).
+Create a new file under `.scratch/<feature-slug>/` (creating the directory if needed). Add or update the corresponding entry in `TODO.md` at the repo root (feature slug, `Status:`, path to `spec.md`) so the index stays accurate.
+
+## Keep `TODO.md` current
+
+Whenever a ticket's `Status:` line changes, or a new feature directory/spec is added, update its entry in `TODO.md` at the repo root in the same pass. It's an index, not the source of truth — but a stale index is worse than none.
 
 ## When a skill says "fetch the relevant ticket"
 

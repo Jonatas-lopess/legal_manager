@@ -16,7 +16,7 @@ When porting code, check the sibling `office_manager` repo as source — `PLANNI
 
 ### Issue tracker
 
-Local markdown under `.scratch/<feature-slug>/` (no git remote configured for this repo). See `docs/agents/issue-tracker.md`.
+Local markdown under `.scratch/<feature-slug>/` (no git remote configured for this repo). See `docs/agents/issue-tracker.md`. Check `TODO.md` at the repo root first — it's a quick index into `.scratch/`, not the source of truth (each ticket's own `Status:` line is).
 
 ### Domain docs
 
