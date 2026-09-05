@@ -4,13 +4,13 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
 
 ## postgres-schema-rls
 
-- Status: `ready-for-agent`
+- Status: `done`
 - Spec: `.scratch/postgres-schema-rls/spec.md`
 - Issues:
-  - `01-tenant-user-foundation.md` — ready-for-agent — no blockers
-  - `02-clients-catalog-matters-tags.md` — ready-for-agent — blocked by 01
-  - `03-deadlines-deadline-tags.md` — ready-for-agent — blocked by 02
-  - `04-payments-audit-log.md` — ready-for-agent — blocked by 02
+  - `01-tenant-user-foundation.md` — done
+  - `02-clients-catalog-matters-tags.md` — done
+  - `03-deadlines-deadline-tags.md` — done
+  - `04-payments-audit-log.md` — done
 
 ## tenants-auth-invite
 

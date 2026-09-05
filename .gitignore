@@ -22,6 +22,9 @@ dist-ssr
 supabase/.branches
 supabase/.temp
 
+# packages/db integration test harness (Testcontainers connection info)
+packages/db/test/.container-state.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -1,0 +1,62 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1788575773112,
+      "tag": "20260905023613_tenant-user-foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788575779036,
+      "tag": "20260905023619_tenant-user-rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788575799828,
+      "tag": "20260905023639_clients-catalog-matters-tags",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788575811354,
+      "tag": "20260905023651_clients-catalog-matters-tags-rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788575914655,
+      "tag": "20260905023834_deadlines-deadline-tags",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788575925971,
+      "tag": "20260905023845_deadlines-deadline-tags-rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788575938793,
+      "tag": "20260905023858_payments-audit-log",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788575949972,
+      "tag": "20260905023909_payments-audit-log-rls",
+      "breakpoints": true
+    }
+  ]
+}

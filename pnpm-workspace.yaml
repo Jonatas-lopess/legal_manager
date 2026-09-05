@@ -8,3 +8,9 @@ allowBuilds:
   # already resolves correctly, so skip the postinstall build rather than
   # run an unreviewed native script.
   unrs-resolver: false
+  # Transitive deps of testcontainers' ssh2 (only used for SSH-tunneled
+  # remote Docker hosts) — our harness talks to the local Docker socket
+  # directly, so the native builds buy nothing here.
+  cpu-features: false
+  protobufjs: false
+  ssh2: false
