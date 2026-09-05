@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Multi-tenant auth + org/user-invite scaffolding (PLANNING §7 step 3)
 

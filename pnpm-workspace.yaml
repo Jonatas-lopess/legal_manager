@@ -1,6 +1,10 @@
 packages:
   - "apps/*"
   - "packages/*"
+  # tenants-auth-invite's invite Edge Function: real npm deps (@supabase/
+  # supabase-js, pg) installed here for Node/vitest; supabase/functions/
+  # import_map.json maps the same bare specifiers to npm: for Deno.
+  - "supabase/functions/*"
 
 allowBuilds:
   esbuild: true

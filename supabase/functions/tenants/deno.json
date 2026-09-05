@@ -1,0 +1,8 @@
+{
+  "imports": {
+    "@legal-manager/schema": "../../../packages/schema/src/index.ts",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.49.0",
+    "pg": "npm:pg@8.23.0",
+    "zod": "npm:zod@4.4.3"
+  }
+}

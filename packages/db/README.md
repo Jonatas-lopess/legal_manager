@@ -114,3 +114,33 @@ Run with `pnpm --filter @legal-manager/db test` (or `pnpm test` from inside
 `packages/db`). Each run pays real container-boot + first-run-migration cost
 (~90s) — the image bootstraps its own auth/extensions/roles migrations before
 accepting connections, on top of ours.
+
+## First-tenant/first-admin provisioning (`scripts/provision-first-admin.ts`)
+
+There's no self-service signup (PLANNING §8) — the only way into a brand new
+tenant is this script, run against a live Supabase project (local `supabase
+start` stack or a real one). It creates one `tenants` row and one
+`public.users` row (`role = 'admin'`) linked to a real Supabase Auth user,
+via the Auth Admin API (`auth.admin.createUser`) — the same account-creation
+path `tenants-auth-invite`'s invite Edge Function uses for every user after
+the first. Deliberately not reachable from `apps/web`: it's ops/CLI tooling,
+and it's also how the `tenants-auth-invite` integration suite seeds its
+first authenticated user.
+
+```
+SUPABASE_URL=http://127.0.0.1:55321 \
+SUPABASE_SERVICE_ROLE_KEY=<service_role key from `supabase status`> \
+SUPABASE_DB_URL=postgresql://postgres:postgres@127.0.0.1:55322/postgres \
+pnpm --filter @legal-manager/db provision-first-admin \
+  --tenant "Escritório Exemplo" --email admin@example.com --password 'trocar123!'
+```
+
+`--password` is optional — omit it to have one generated and printed once.
+Row inserts go over a direct Postgres connection (`SUPABASE_DB_URL`), not the
+Data API: `service_role` has no table grant on `tenants`/`users` in this
+schema (only `authenticated` gets `SELECT`, see the RLS pattern above), so a
+`supabase-js` `.from(...)` call from a service-role client would fail — the
+Admin API (a separate, grant-independent HTTP surface) is only used to create
+the Auth account itself. If the row inserts fail after the Auth user was
+created, the script deletes that Auth user rather than leaving an
+Auth-account-without-a-tenant-row orphan.

@@ -14,12 +14,12 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
 
 ## tenants-auth-invite
 
-- Status: `ready-for-agent`
+- Status: `done`
 - Spec: `.scratch/tenants-auth-invite/spec.md`
 - Issues:
-  - `01-first-admin-provisioning-script.md` — ready-for-agent — blocked by postgres-schema-rls/01
-  - `02-login-session-route-guard.md` — ready-for-agent — blocked by 01
-  - `03-invite-edge-function-roster.md` — ready-for-agent — blocked by 01, 02
+  - `01-first-admin-provisioning-script.md` — done
+  - `02-login-session-route-guard.md` — done
+  - `03-invite-edge-function-roster.md` — done
 - Depends on: `postgres-schema-rls`
 
 ## clients-catalog-matters-crud

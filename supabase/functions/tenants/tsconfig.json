@@ -6,7 +6,9 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "noEmit": true,
-    "strict": true
+    "strict": true,
+    "allowImportingTsExtensions": true
   },
-  "include": ["src", "test", "scripts", "*.config.ts"]
+  "include": ["service.ts", "repository.ts", "test"],
+  "exclude": ["index.ts"]
 }
