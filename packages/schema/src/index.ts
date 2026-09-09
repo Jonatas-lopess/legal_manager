@@ -135,3 +135,24 @@ export const updateMatterInputSchema = createMatterInputSchema.partial().extend(
   status: z.enum(matterStatuses).optional(),
 });
 export type UpdateMatterInput = z.input<typeof updateMatterInputSchema>;
+
+// Mirrors `packages/db/src/schema.ts`'s `tags.color` column (DB default
+// `"#6366f1"`). Deliberately no `.default()` on either field here — neither
+// needs one (unlike `matters`' `status`), so `.partial()` below is safe per
+// the zod v4 `.partial()`-doesn't-strip-`.default()` bug ticket 03 found;
+// `tags.repository.ts` omits `color` from the insert payload when absent so
+// the DB default applies, rather than duplicating it in the schema.
+const hexColorRegex = /^#[0-9a-f]{6}$/i;
+
+export const createTagInputSchema = z.object({
+  name: z.string().trim().min(1, "Nome é obrigatório"),
+  color: z
+    .string()
+    .trim()
+    .regex(hexColorRegex, "Cor deve ser um hexadecimal válido, ex: #6366f1")
+    .optional(),
+});
+export type CreateTagInput = z.input<typeof createTagInputSchema>;
+
+export const updateTagInputSchema = createTagInputSchema.partial();
+export type UpdateTagInput = z.input<typeof updateTagInputSchema>;

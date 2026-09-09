@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getMatter, type Matter, type MatterStatus } from "../matters.controller";
 import { MatterDialog } from "./MatterDialog";
+import { TagPicker } from "../../tags/components/TagPicker";
 
 const statusLabels: Record<MatterStatus, string> = {
   rascunho: "Rascunho",
@@ -91,15 +92,16 @@ export function MatterDetailView() {
         </CardContent>
       </Card>
 
-      {/* Tags slot — ticket 04 (tags-matter-tagging) fills this section in.
-          Keep this section as the sole insertion point for the tag picker
-          and the matter's attached-tags list. */}
+      {/* Tags slot — filled by ticket 04 (tags-matter-tagging). TagPicker
+          (apps/web/src/modules/tags/components/TagPicker.tsx) owns the
+          attached-tags chip list, remove-per-chip control, and the inline
+          add-existing-or-create-new picker. */}
       <Card data-slot="matter-tags-panel">
         <CardHeader>
           <CardTitle>Tags</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Nenhuma tag anexada ainda.</p>
+          <TagPicker matterId={matter.id} />
         </CardContent>
       </Card>
 

@@ -30,7 +30,7 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
   - `01-clients-crud.md` — done
   - `02-catalog-crud.md` — done
   - `03-matters-crud-rascunho-lifecycle.md` — done
-  - `04-tags-matter-tagging.md` — ready-for-agent — blocked by 03
+  - `04-tags-matter-tagging.md` — done
   - `05-payments-matter-scoped-role-gated.md` — ready-for-agent — blocked by 03, tenants-auth-invite/02
 - Depends on: `postgres-schema-rls`, `tenants-auth-invite`
 
