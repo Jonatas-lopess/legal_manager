@@ -7,6 +7,8 @@ import { RequireAuth } from "@/modules/tenants/components/RequireAuth";
 import { ResetPasswordForm } from "@/modules/tenants/components/ResetPasswordForm";
 import { logout } from "@/modules/tenants/tenants.controller";
 import { ClientsTable } from "@/modules/clients/components/ClientsTable";
+import { MattersTable } from "@/modules/matters/components/MattersTable";
+import { MatterDetailView } from "@/modules/matters/components/MatterDetailView";
 
 const moduleRoutes = [
   { path: "/clients", label: "Clientes" },
@@ -62,8 +64,14 @@ function ProtectedApp() {
         <Route path="/clients">
           <ClientsTable />
         </Route>
+        <Route path="/matters/:id">
+          <MatterDetailView />
+        </Route>
+        <Route path="/matters">
+          <MattersTable />
+        </Route>
         {moduleRoutes
-          .filter(({ path }) => path !== "/clients")
+          .filter(({ path }) => path !== "/clients" && path !== "/matters")
           .map(({ path, label }) => (
             <Route key={path} path={path}>
               <div>{label}</div>

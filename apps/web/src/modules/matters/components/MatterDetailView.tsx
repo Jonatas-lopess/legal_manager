@@ -1,0 +1,129 @@
+import * as React from "react";
+import { useLocation, useParams } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getMatter, type Matter, type MatterStatus } from "../matters.controller";
+import { MatterDialog } from "./MatterDialog";
+
+const statusLabels: Record<MatterStatus, string> = {
+  rascunho: "Rascunho",
+  em_andamento: "Em andamento",
+  concluido: "Concluído",
+  arquivado: "Arquivado",
+};
+
+/**
+ * Matter detail view — the anchor tickets 04 (tags) and 05 (payments) attach
+ * their panels to. Sectioned as: core fields (this ticket, reuses
+ * `MatterDialog` for editing) + two clearly-delineated placeholder sections
+ * below. Do not build tag/payment UI here — that's out of scope for this
+ * ticket; tickets 04/05 extend the two named slots in place.
+ */
+export function MatterDetailView() {
+  const { id } = useParams<{ id: string }>();
+  const [, navigate] = useLocation();
+  const [matter, setMatter] = React.useState<Matter | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [editOpen, setEditOpen] = React.useState(false);
+
+  const fetchMatter = React.useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    try {
+      setMatter(await getMatter(id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível carregar o processo.");
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  React.useEffect(() => {
+    fetchMatter();
+  }, [fetchMatter]);
+
+  if (loading) return <p className="p-4 text-sm text-muted-foreground">Carregando...</p>;
+  if (error) return <p role="alert" className="p-4 text-sm text-destructive">{error}</p>;
+  if (!matter) return <p className="p-4 text-sm text-muted-foreground">Processo não encontrado.</p>;
+
+  return (
+    <div className="flex w-full max-w-3xl flex-col gap-4" data-testid="matter-detail-view">
+      <div className="flex items-center justify-between gap-2">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/matters")}>
+          ← Processos
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+          Editar
+        </Button>
+      </div>
+
+      {/* Core fields section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Dados do processo</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-2 text-sm sm:grid-cols-2">
+          <div>
+            <span className="text-muted-foreground">Status: </span>
+            {statusLabels[matter.status]}
+          </div>
+          <div>
+            <span className="text-muted-foreground">UF: </span>
+            {matter.uf}
+          </div>
+          <div>
+            <span className="text-muted-foreground">Comarca: </span>
+            {matter.comarca ?? "—"}
+          </div>
+          <div>
+            <span className="text-muted-foreground">Município: </span>
+            {matter.municipio ?? "—"}
+          </div>
+          <div className="sm:col-span-2">
+            <span className="text-muted-foreground">Descrição: </span>
+            {matter.description ?? "—"}
+          </div>
+          {matter.deletedAt && (
+            <div className="sm:col-span-2 text-destructive">Processo excluído em {matter.deletedAt}.</div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Tags slot — ticket 04 (tags-matter-tagging) fills this section in.
+          Keep this section as the sole insertion point for the tag picker
+          and the matter's attached-tags list. */}
+      <Card data-slot="matter-tags-panel">
+        <CardHeader>
+          <CardTitle>Tags</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Nenhuma tag anexada ainda.</p>
+        </CardContent>
+      </Card>
+
+      {/* Payments slot — ticket 05 (payments-matter-scoped-role-gated) fills
+          this section in (and is responsible for hiding it entirely from
+          `secretario`, per PLANNING §8 — this ticket does not gate it). */}
+      <Card data-slot="matter-payments-panel">
+        <CardHeader>
+          <CardTitle>Financeiro</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Nenhum pagamento registrado ainda.</p>
+        </CardContent>
+      </Card>
+
+      {editOpen && (
+        <MatterDialog
+          open
+          mode="edit"
+          matter={matter}
+          onOpenChange={setEditOpen}
+          onSaved={(saved) => setMatter(saved)}
+        />
+      )}
+    </div>
+  );
+}

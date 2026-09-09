@@ -89,3 +89,49 @@ export type CreateCatalogItemInput = z.input<typeof createCatalogItemInputSchema
 
 export const updateCatalogItemInputSchema = createCatalogItemInputSchema.partial();
 export type UpdateCatalogItemInput = z.input<typeof updateCatalogItemInputSchema>;
+
+// Mirrors `packages/db/src/schema.ts`'s `matterStatusEnum`.
+export const matterStatuses = ["rascunho", "em_andamento", "concluido", "arquivado"] as const;
+export type MatterStatus = (typeof matterStatuses)[number];
+
+// Same blank/absent-collapses-to-null treatment as `optionalText()`, but for
+// a nullable FK column — "" (a cleared `<select>`) and "not provided" both
+// mean "no reference chosen" here (ADR-0004: rascunho allows both null).
+const optionalUuid = () =>
+  optionalText().refine(
+    (value) => value === null || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value),
+    "ID inválido",
+  );
+
+export const createMatterInputSchema = z.object({
+  clientId: optionalUuid(),
+  matterCatalogItemId: optionalUuid(),
+  status: z.enum(matterStatuses).default("rascunho"),
+  // Mirrors `matters_uf_is_two_letters` (packages/db/src/schema.ts) — the DB
+  // check remains the source of truth, this is a UX pre-check (ADR-0002).
+  uf: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z]{2}$/, "UF deve ter exatamente 2 letras"),
+  comarca: optionalText(),
+  municipio: optionalText(),
+  description: optionalText(),
+});
+export type CreateMatterInput = z.input<typeof createMatterInputSchema>;
+
+// NOT a plain `.partial()` for `status`, unlike the other fields: in zod v4,
+// wrapping a `.default()`-bearing field in `.optional()` (what `.partial()`
+// does under the hood) does *not* stop the default from firing on a
+// genuinely-omitted key — `updateMatterInputSchema.parse({})` would still
+// yield `status: "rascunho"`, silently reverting an in-progress matter's
+// status on any edit that doesn't touch it. (The `createClientInputSchema`
+// comment nearby claims `.partial()` drops `.default()` — that held in zod
+// v3, not in this v4 install; `clients`'s `status` field has this same latent
+// issue, out of scope for this module to fix.) `.extend()` after `.partial()`
+// replaces `status` with a default-free optional enum, so an omitted key
+// stays `undefined` and the caller's/row's existing status is preserved.
+export const updateMatterInputSchema = createMatterInputSchema.partial().extend({
+  status: z.enum(matterStatuses).optional(),
+});
+export type UpdateMatterInput = z.input<typeof updateMatterInputSchema>;

@@ -4,13 +4,24 @@
 
 **Blocked by:** 01 (Clients CRUD), 02 (Catalog CRUD)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Create matter in `rascunho` with null `client_id`/catalog item succeeds
-- [ ] Service-layer promotion to `em_andamento` with either still null is rejected with a validation error (not a raw DB error); succeeds once both set
-- [ ] List/search/filter by status and client, tenant-scoped; cross-tenant list/read returns nothing
-- [ ] Edit core fields (client, catalog item, `uf`/`comarca`/`municipio`, description) after creation
-- [ ] `concluido`/`arquivado` settable with no additional workflow gate
-- [ ] Soft-delete mirrors clients' behavior (`deleted_at`, hidden from default list, fetchable by ID)
-- [ ] Every create/update/status-change/soft-delete produces an `audit_log` row
-- [ ] Test seam: `matters.service.ts` against real local Supabase stack (no mocked `supabase-js`)
+- [x] Create matter in `rascunho` with null `client_id`/catalog item succeeds
+- [x] Service-layer promotion to `em_andamento` with either still null is rejected with a validation error (not a raw DB error); succeeds once both set
+- [x] List/search/filter by status and client, tenant-scoped; cross-tenant list/read returns nothing
+- [x] Edit core fields (client, catalog item, `uf`/`comarca`/`municipio`, description) after creation
+- [x] `concluido`/`arquivado` settable with no additional workflow gate
+- [x] Soft-delete mirrors clients' behavior (`deleted_at`, hidden from default list, fetchable by ID)
+- [x] Every create/update/status-change/soft-delete produces an `audit_log` row
+- [x] Test seam: `matters.service.ts` against real local Supabase stack (no mocked `supabase-js`)
+
+## Comments
+
+Implemented as specced, plus one real bug found and fixed along the way — worth flagging for tickets 04/05, which both edit rows in this same lifecycle:
+
+- **`zod` v4's `.partial()` does not strip `.default()`** — contrary to the comment already sitting next to `createClientInputSchema`/`updateClientInputSchema` in `packages/schema/src/index.ts` (accurate for zod v3, not for the v4 installed here). Empirically, `updateMatterInputSchema.parse({})` returned `{ status: "rascunho" }`, not `{}` — i.e. every matter edit that didn't explicitly touch `status` would have silently reset it back to `rascunho`, which is a correctness bug for exactly the lifecycle this ticket is about (an `em_andamento` matter reverting to `rascunho` on an unrelated field edit). Fixed by *not* deriving `updateMatterInputSchema`'s `status` field via blind `.partial()`: it's `.partial().extend({ status: z.enum(matterStatuses).optional() })` instead, so an omitted key stays genuinely `undefined`. Confirmed via `matters.service.test.ts`'s "edits core fields after creation" and "concluido/arquivado settable" cases, which would have silently passed even with the bug (the fixture matter's implicit status happened to coincide), so I verified the fix with an ad-hoc parse check before relying on those tests alone.
+  - **Same latent bug exists in `updateClientInputSchema`** (confirmed by the same ad-hoc check: `updateClientInputSchema.parse({ name: "X" })` returns `status: "ativo"` even when `status` isn't in the input) — in practice masked there because `ClientDialog.tsx`'s react-hook-form always submits the full field set (including current `status`) rather than a sparse patch, so the UI path never observes it. Not fixed here (ticket 01 is `done`, out of scope for this ticket) — flagging in case a future direct-`service.ts`-caller (a script, a bulk-edit feature) hits it.
+- **Service-layer rascunho-lifecycle check runs whenever the patch touches `status`, `clientId`, *or* `matterCatalogItemId`** — not just "status-changing updates" as the ticket phrasing leads with. This also catches clearing `clientId`/`matterCatalogItemId` back to null while `status` stays non-`rascunho` (an update the DB `CHECK` would also reject), which a status-only trigger would have missed. Covered by an extra test case beyond the ticket's checklist ("also rejects clearing client/catalog item while status stays non-rascunho").
+- **Detail-view slots for tickets 04/05**: `MatterDetailView.tsx` renders three `Card`s — core fields (read-only + an "Editar" button reusing `MatterDialog`), then two placeholder `Card`s marked `data-slot="matter-tags-panel"` and `data-slot="matter-payments-panel"` with a comment pointing at each ticket. Extend those two `Card`'s `CardContent` in place; don't add new top-level sections. Payments' `secretario`-hiding gate (story 31) is *not* applied here — ticket 05 owns that, per the spec's Implementation Decisions.
+- **UI wiring**: `App.tsx`'s `/matters` route now renders `MattersTable` (was a placeholder `<div>`, same as `/clients` was before ticket 01) and a new `/matters/:id` route renders `MatterDetailView`. `MattersTable`'s row "Ver" action navigates via wouter's `useLocation()` `navigate()` rather than `<Link asChild>` — wouter v3's `Link asChild` does a raw `cloneElement(children, { onClick, href })` (no Radix `Slot`-style prop merging), which would push a stray `href` attribute onto the `Button`'s underlying `<button>`; `useLocation()` avoids that with no behavior difference.
+- No audit trigger call from `matters.service.ts` (confirmed the `matters_audit_log_insert_delete`/`_update` triggers already fire, same family as `clients`) — verified directly against `audit_log` in the last test case, same pattern as ticket 01.
