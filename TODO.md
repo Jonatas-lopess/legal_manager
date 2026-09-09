@@ -46,3 +46,10 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
   - `05-deadline-alerts.md` — done
 - See `03-deadlines-crud-listing-tags.md` Comments for the 2026-09-09 code-review pass; see `postgres-schema-rls`'s `04-payments-audit-log.md` Comments for the follow-up `audit_log` FK-on-cascade bug it found (fixed).
 - Depends on: `postgres-schema-rls`, `tenants-auth-invite`, `clients-catalog-matters-crud`
+
+## dashboard-reports
+
+- Status: `blocked` (waiting on Figma wireframes — user drafting manually)
+- Spec: `.scratch/dashboard-reports/spec.md`
+- Issues: none yet — spec is a draft pending screens doc
+- Depends on: `postgres-schema-rls`, `tenants-auth-invite`, `clients-catalog-matters-crud`, `deadlines-engine-alerts`
