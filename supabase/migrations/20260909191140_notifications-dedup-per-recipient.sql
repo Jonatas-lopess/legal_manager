@@ -1,0 +1,2 @@
+DROP INDEX "notifications_deadline_threshold_channel_unique";--> statement-breakpoint
+CREATE UNIQUE INDEX "notifications_deadline_threshold_channel_unique" ON "notifications" USING btree ("deadline_id","threshold","channel","recipient_user_id") WHERE "notifications"."deadline_id" is not null;

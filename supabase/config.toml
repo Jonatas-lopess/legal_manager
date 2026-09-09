@@ -390,6 +390,28 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/import_map.json"
 
+# deadlines-holiday-sync (deadlines-engine-alerts/04): cron-triggered
+# (pg_cron+pg_net, see the accompanying *_deadlines-holiday-sync-cron.sql
+# migration) rather than user-triggered — `verify_jwt = false` because the
+# caller is `net.http_post` passing the service-role key directly, never an
+# end-user JWT. Without a `[functions.<slug>]` block the local CLI doesn't
+# route `/functions/v1/deadlines-holiday-sync` at all (confirmed: 404 with
+# no entry, even after restarting the edge-runtime container) — this entry
+# is required for the function to be reachable, not optional config.
+[functions.deadlines-holiday-sync]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deadlines-holiday-sync/deno.json"
+
+# deadlines-alerts (deadlines-engine-alerts/05): same cron-triggered shape as
+# deadlines-holiday-sync above — `verify_jwt = false` because the caller is
+# `net.http_post` (see the accompanying *_deadlines-alerts-cron.sql
+# migration) with the service-role key, never an end-user JWT.
+[functions.deadlines-alerts]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deadlines-alerts/deno.json"
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

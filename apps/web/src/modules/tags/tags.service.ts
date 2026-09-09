@@ -101,3 +101,50 @@ export async function listTagsForMatter(matterId: string): Promise<Tag[]> {
   if (error) throw error;
   return (data ?? []).map(toTag);
 }
+
+// --- deadline-tagging (deadlines-engine-alerts/03) — mirrors the
+// *ForMatter/*ToMatter functions above exactly, parallel set for
+// `deadline_tags` (ADR-0003: cosmetic only, never read by the counting
+// engine).
+
+/** Attaches an already-known tag id to a deadline — mirrors
+ * attachTagToMatter. */
+export async function attachTagToDeadline(deadlineId: string, tagId: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Não autenticado.");
+
+  const { error } = await repo.insertDeadlineTag(user.tenantId, deadlineId, tagId);
+  if (error) throw error;
+}
+
+/** Mirrors attachTagToMatterByName — the deadline tag picker's inline
+ * add-existing-or-create-new path. */
+export async function attachTagToDeadlineByName(deadlineId: string, name: string, color?: string): Promise<Tag> {
+  const parsed = createTagInputSchema.parse({ name, color });
+
+  const { data: existingRow, error: findError } = await repo.fetchTagByName(parsed.name);
+  if (findError) throw findError;
+
+  const tag = existingRow ? toTag(existingRow) : await createTag(parsed);
+  await attachTagToDeadline(deadlineId, tag.id);
+  return tag;
+}
+
+/** Removes only this deadline's attachment — mirrors detachTagFromMatter. */
+export async function detachTagFromDeadline(deadlineId: string, tagId: string): Promise<void> {
+  const { error } = await repo.deleteDeadlineTag(deadlineId, tagId);
+  if (error) throw error;
+}
+
+/** RLS scopes both underlying queries to the caller's tenant. */
+export async function listTagsForDeadline(deadlineId: string): Promise<Tag[]> {
+  const { data: joinRows, error: joinError } = await repo.listTagIdsForDeadline(deadlineId);
+  if (joinError) throw joinError;
+
+  const tagIds = (joinRows ?? []).map((row) => row.tag_id);
+  if (tagIds.length === 0) return [];
+
+  const { data, error } = await repo.fetchTagsByIds(tagIds);
+  if (error) throw error;
+  return (data ?? []).map(toTag);
+}

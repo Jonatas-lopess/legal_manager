@@ -1,6 +1,7 @@
 {
   "imports": {
     "@legal-manager/schema": "../../packages/schema/src/index.ts",
-    "zod": "npm:zod@4.4.3"
+    "zod": "npm:zod@4.4.3",
+    "cpf-cnpj-validator": "npm:cpf-cnpj-validator@1.0.3"
   }
 }

@@ -57,6 +57,48 @@
       "when": 1788575949972,
       "tag": "20260905023909_payments-audit-log-rls",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788968831886,
+      "tag": "20260909154711_deadlines-schema-holidays-notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788968845222,
+      "tag": "20260909154725_deadlines-schema-holidays-notifications-rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788970343146,
+      "tag": "20260909161223_deadlines-holiday-sync-cron",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788971583262,
+      "tag": "20260909163303_deadlines-days-column",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1788981006528,
+      "tag": "20260909191006_deadlines-alerts-cron",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1788981100206,
+      "tag": "20260909191140_notifications-dedup-per-recipient",
+      "breakpoints": true
     }
   ]
 }

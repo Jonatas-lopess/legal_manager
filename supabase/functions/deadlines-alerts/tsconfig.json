@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "strict": true,
+    "allowImportingTsExtensions": true
+  },
+  "include": ["service.ts", "repository.ts", "test"],
+  "exclude": ["index.ts"]
+}

@@ -3,6 +3,7 @@
     "@legal-manager/schema": "../../../packages/schema/src/index.ts",
     "@supabase/supabase-js": "npm:@supabase/supabase-js@2.49.0",
     "pg": "npm:pg@8.23.0",
-    "zod": "npm:zod@4.4.3"
+    "zod": "npm:zod@4.4.3",
+    "cpf-cnpj-validator": "npm:cpf-cnpj-validator@1.0.3"
   }
 }

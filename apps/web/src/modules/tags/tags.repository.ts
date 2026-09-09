@@ -83,4 +83,26 @@ export async function listTagIdsForMatter(matterId: string) {
   return supabase.from("matter_tags").select("tag_id").eq("matter_id", matterId).returns<MatterTagRow[]>();
 }
 
+// `deadline_tags` (deadlines-engine-alerts/01) — owned by the `tags`
+// context per the spec's domain glossary, same reasoning as `matter_tags`
+// above even though this join is keyed by deadline_id; `deadlines` reaches
+// these only through tags.controller.ts, never this file (PLANNING §6). No
+// `deleteTag` cascade comment repeated here — the FKs work the same way.
+
+export async function insertDeadlineTag(tenantId: string, deadlineId: string, tagId: string) {
+  return supabase.from("deadline_tags").insert({ tenant_id: tenantId, deadline_id: deadlineId, tag_id: tagId });
+}
+
+export async function deleteDeadlineTag(deadlineId: string, tagId: string) {
+  return supabase.from("deadline_tags").delete().eq("deadline_id", deadlineId).eq("tag_id", tagId);
+}
+
+interface DeadlineTagRow {
+  tag_id: string;
+}
+
+export async function listTagIdsForDeadline(deadlineId: string) {
+  return supabase.from("deadline_tags").select("tag_id").eq("deadline_id", deadlineId).returns<DeadlineTagRow[]>();
+}
+
 export type { TagRow };

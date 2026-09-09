@@ -180,3 +180,52 @@ export const createPaymentInputSchema = z.object({
   status: z.enum(paymentStatuses).default("pendente"),
 });
 export type CreatePaymentInput = z.input<typeof createPaymentInputSchema>;
+
+// Mirrors `packages/db/src/schema.ts`'s `countingModeEnum`/`deadlineStatusEnum`
+// (deadlines-engine-alerts/01) — no Zod shape existed for either yet
+// (checked: `deadlines.matterId`/`isFatal`/`countingMode` were DB-only until
+// now), so both are defined here for the first time.
+export const countingModes = ["dias_uteis", "dias_corridos"] as const;
+export type CountingMode = (typeof countingModes)[number];
+
+export const deadlineStatuses = ["pendente", "cumprido"] as const;
+export type DeadlineStatus = (typeof deadlineStatuses)[number];
+
+// Same non-nullable uuid-shape check as `createPaymentInputSchema`'s
+// `matterIdRegex` above — a deadline, like a payment, always belongs to a
+// specific matter (no rascunho-style "not chosen yet" state). Not reusing
+// that same-named const across sections (kept local, mirroring how each
+// section here is self-contained).
+const deadlineMatterIdRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export const createDeadlineInputSchema = z.object({
+  matterId: z.string().trim().regex(deadlineMatterIdRegex, "ID de processo inválido"),
+  countingMode: z.enum(countingModes),
+  days: z.coerce.number().int().positive("Dias deve ser um número inteiro positivo"),
+  isFatal: z.boolean().default(false),
+  // Calendar date, not an instant — same convention as `clients.birthDate`
+  // (`optionalText()` above). No full date-format regex: a trimmed
+  // non-empty string is enough here, the DB `date` column and
+  // `computeDueDate`'s own `YYYY-MM-DD` parsing are the real guards.
+  startDate: z.string().trim().min(1, "Data de início é obrigatória"),
+  description: z.string().trim().min(1, "Descrição é obrigatória"),
+});
+export type CreateDeadlineInput = z.input<typeof createDeadlineInputSchema>;
+
+// No `status` field at all — status changes through a separate "mark
+// cumprido" action, same precedent as `createPaymentInputSchema`'s "no
+// general field-patch" note: `deadlines.service.ts`'s `markDeadlineCumprido`
+// reads the row's current status itself rather than taking a target status
+// as input, so there's no defaulted `status` field left to trip the zod v4
+// `.partial()`-doesn't-strip-`.default()` bug (see `updateMatterInputSchema`'s
+// comment above for the full explanation).
+//
+// `isFatal` still carries `.default(false)` above, though — a bare
+// `.partial()` alone would leave that same bug in place for it (an edit
+// that omits `isFatal` would otherwise silently reset it to `false`). Same
+// `.extend()`-after-`.partial()` fix `updateMatterInputSchema` uses for
+// `status`.
+export const updateDeadlineInputSchema = createDeadlineInputSchema.partial().extend({
+  isFatal: z.boolean().optional(),
+});
+export type UpdateDeadlineInput = z.input<typeof updateDeadlineInputSchema>;

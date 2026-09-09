@@ -36,12 +36,14 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
 
 ## deadlines-engine-alerts
 
-- Status: `ready-for-agent`
+- Status: `done`
 - Spec: `.scratch/deadlines-engine-alerts/spec.md`
 - Issues:
-  - `01-deadlines-schema-holidays-notifications.md` — ready-for-agent — blocked by postgres-schema-rls/01, postgres-schema-rls/03
-  - `02-counting-engine-core.md` — ready-for-agent — blocked by 01
-  - `03-deadlines-crud-listing-tags.md` — ready-for-agent — blocked by 02
-  - `04-civil-holiday-sync.md` — ready-for-agent — blocked by 01
-  - `05-deadline-alerts.md` — ready-for-agent — blocked by 03
+  - `01-deadlines-schema-holidays-notifications.md` — done
+  - `02-counting-engine-core.md` — done
+  - `03-deadlines-crud-listing-tags.md` — done
+  - `04-civil-holiday-sync.md` — done
+  - `05-deadline-alerts.md` — done
+- Known follow-up bug (not this feature's scope): tenant deletion fails when it has audited child rows (`audit_log` FK violation on cascade) — belongs to `postgres-schema-rls`/04. Left ~300+ orphaned test tenants on the local stack; needs its own cleanup + trigger fix.
+- Code-review pass (2026-09-09) on the finished feature found one confirmed bug (fixed: `DeadlineDialog` was sending every field on every edit, not just changed ones — could silently shift `due_date` on an unrelated edit if holidays changed since creation; now diffs `dirtyFields`, regression test added). Findings left as documented, non-blocking follow-ups (efficiency/duplication, not correctness): the business-day/holiday engine is duplicated between `apps/web/src/modules/deadlines/deadlines.service.ts` and `supabase/functions/deadlines-alerts/service.ts` (no cross-app shared-package precedent existed to avoid it); `deadlines-alerts` resolves holidays per-candidate instead of batched per `uf`; `deadlines-holiday-sync` fetches its 56 jurisdiction×year combinations sequentially instead of concurrently; a `notifications` row stuck in `status: 'failed'` blocks a retry on a later day (the dedup unique constraint doesn't distinguish "already sent" from "already tried and failed").
 - Depends on: `postgres-schema-rls`, `tenants-auth-invite`, `clients-catalog-matters-crud`

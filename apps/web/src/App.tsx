@@ -9,6 +9,8 @@ import { logout } from "@/modules/tenants/tenants.controller";
 import { ClientsTable } from "@/modules/clients/components/ClientsTable";
 import { MattersTable } from "@/modules/matters/components/MattersTable";
 import { MatterDetailView } from "@/modules/matters/components/MatterDetailView";
+import { DeadlinesTable } from "@/modules/deadlines/components/DeadlinesTable";
+import { NotificationsDropdown } from "@/modules/notifications/components/NotificationsDropdown";
 
 const moduleRoutes = [
   { path: "/clients", label: "Clientes" },
@@ -40,16 +42,19 @@ function AppShell({ children }: { children: React.ReactNode }) {
           )}
         </div>
         {user && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={async () => {
-              await logout();
-              await refresh();
-            }}
-          >
-            Sair
-          </Button>
+          <div className="flex items-center gap-2">
+            <NotificationsDropdown />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={async () => {
+                await logout();
+                await refresh();
+              }}
+            >
+              Sair
+            </Button>
+          </div>
         )}
       </header>
       <main className="flex flex-1 items-start justify-center p-6">{children}</main>
@@ -70,8 +75,11 @@ function ProtectedApp() {
         <Route path="/matters">
           <MattersTable />
         </Route>
+        <Route path="/deadlines">
+          <DeadlinesTable />
+        </Route>
         {moduleRoutes
-          .filter(({ path }) => path !== "/clients" && path !== "/matters")
+          .filter(({ path }) => path !== "/clients" && path !== "/matters" && path !== "/deadlines")
           .map(({ path, label }) => (
             <Route key={path} path={path}>
               <div>{label}</div>

@@ -4,6 +4,8 @@ import {
   check,
   date,
   foreignKey,
+  integer,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -11,6 +13,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -201,9 +204,13 @@ export const matterTags = pgTable(
 
 export const countingModeEnum = pgEnum("counting_mode", ["dias_uteis", "dias_corridos"]);
 
-// Only the fields the future counting engine reads directly (ADR-0003) —
-// start_date/due_date/description/status are the deadlines-engine-alerts
-// spec's job, not this one's.
+export const deadlineStatusEnum = pgEnum("deadline_status", ["pendente", "cumprido"]);
+
+// matter_id/is_fatal/counting_mode are the fields the counting engine reads
+// directly (ADR-0003, postgres-schema-rls/03). start_date/description/
+// status/due_date are deadlines-engine-alerts/01's addendum — due_date is
+// written only by deadlines.service.ts's computeDueDate, never a raw
+// client-editable form field (see that spec's Implementation Decisions).
 export const deadlines = pgTable(
   "deadlines",
   {
@@ -214,10 +221,22 @@ export const deadlines = pgTable(
     matterId: uuid("matter_id").notNull(),
     isFatal: boolean("is_fatal").notNull().default(false),
     countingMode: countingModeEnum("counting_mode").notNull(),
+    // The deadline's actual legal count (e.g. "15 dias úteis para
+    // contestação") — a gap ticket 02 found: nothing else on this table (or
+    // anywhere in the spec) carries the number computeDueDate needs. Added
+    // as a follow-up (deadlines-engine-alerts/02's Comments) rather than
+    // silently reinterpreting the spec.
+    days: integer("days").notNull(),
+    // Calendar date, not an instant — same reasoning as clients.birthDate.
+    startDate: date("start_date").notNull(),
+    description: text("description").notNull(),
+    status: deadlineStatusEnum("status").notNull().default("pendente"),
+    dueDate: date("due_date").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    check("deadlines_days_positive", sql`${table.days} > 0`),
     unique("deadlines_id_tenant_id_unique").on(table.id, table.tenantId),
     // Composite FK (against matters' unique(id, tenant_id)) — this row's
     // tenant_id can never disagree with its matter's actual tenant.
@@ -249,6 +268,112 @@ export const deadlineTags = pgTable(
       columns: [table.tagId, table.tenantId],
       foreignColumns: [tags.id, tags.tenantId],
     }).onDelete("cascade"),
+  ],
+).enableRLS();
+
+// Global reference data (no tenant_id) — synced from FeriadosAPI on a
+// schedule (deadlines-engine-alerts spec) so the counting engine never
+// makes a live network call. Readable by any authenticated user; writable
+// only by the sync Edge Function's service-role key (RLS migration).
+export const civilHolidays = pgTable(
+  "civil_holidays",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    date: date("date").notNull(),
+    // Null means national (applies to every uf) — see the unique constraint
+    // below, which must treat two null-uf rows on the same date as a
+    // conflict for the sync job's upsert-on-(date,uf) to dedup correctly.
+    uf: text("uf"),
+    name: text("name").notNull(),
+  },
+  (table) => [
+    // Plain `unique()` treats NULLs as distinct by default, which would let
+    // every national (uf IS NULL) holiday for a given date insert as a
+    // "new" row forever — `.nullsNotDistinct()` (Postgres 15+ `UNIQUE NULLS
+    // NOT DISTINCT`, available per supabase/config.toml major_version = 17)
+    // makes two null-uf rows on the same date collide like any other dup.
+    unique("civil_holidays_date_uf_unique").on(table.date, table.uf).nullsNotDistinct(),
+  ],
+).enableRLS();
+
+// Global reference data (no tenant_id), national-only for MVP (PLANNING §4
+// — no uf/comarca column). Manually curated (seed script/SQL), no in-app
+// editor this round. Same read-all/write-none-to-clients access shape as
+// civil_holidays.
+export const forensicHolidays = pgTable("forensic_holidays", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  description: text("description").notNull(),
+  sourceYear: integer("source_year").notNull(),
+}).enableRLS();
+
+export const notificationChannelEnum = pgEnum("notification_channel", ["email", "in_app"]);
+
+export const notificationStatusEnum = pgEnum("notification_status", [
+  "pending",
+  "sent",
+  "failed",
+]);
+
+// The channel-agnostic notification model PLANNING §5 asks to model now
+// ("hoje: e-mail/in-app; depois: WhatsApp") — deadline alerts are its first
+// real consumer, but category/deadline_id are generic enough to admit other
+// notification types later without a schema change. Only the alerts Edge
+// Function's service-role key writes rows (RLS migration) — same lockdown
+// pattern as `users`.
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    recipientUserId: uuid("recipient_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    channel: notificationChannelEnum("channel").notNull(),
+    category: text("category").notNull(),
+    // Nullable — null admits future non-deadline notification types. A
+    // composite FK (MATCH SIMPLE, trivially satisfied when null — same
+    // reasoning as matters.clientId above) still guarantees a non-null
+    // value can never point at another tenant's deadline.
+    deadlineId: uuid("deadline_id"),
+    threshold: text("threshold"),
+    payload: jsonb("payload").notNull(),
+    status: notificationStatusEnum("status").notNull().default("pending"),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.deadlineId, table.tenantId],
+      foreignColumns: [deadlines.id, deadlines.tenantId],
+    }).onDelete("cascade"),
+    // Dedup mechanism for the alerts job (story 28): a rerun/overlap that
+    // tries to insert the same (deadline, threshold, channel, recipient)
+    // again is a no-op, not a duplicate e-mail. Partial (deadline_id IS NOT
+    // NULL) so future non-deadline notifications (deadline_id null) never
+    // collide.
+    //
+    // deadlines-engine-alerts/05 addendum: ticket 01's original index (this
+    // comment previously described it as (deadline_id, threshold, channel)
+    // only, no recipient_user_id) silently capped each (deadline, threshold,
+    // channel) at exactly one row system-wide — fine for a single-recipient
+    // fixture, but wrong once "Alert recipients" (spec's Implementation
+    // Decisions) fans one alert out to every user in the deadline's tenant:
+    // the second and third recipient's rows would hit this same conflict and
+    // get silently dropped by `ON CONFLICT ... DO NOTHING`, so only one
+    // tenant member would ever actually get notified. recipientUserId is
+    // added to the key so dedup is scoped per-recipient (still exactly-once
+    // per recipient on a rerun/overlap) rather than per-deadline overall.
+    // Same "found ticket 01 missed a column/constraint, fixed via a small
+    // follow-up migration in this ticket" precedent as
+    // 20260909163303_deadlines-days-column.sql (ticket 02's `days` column).
+    uniqueIndex("notifications_deadline_threshold_channel_unique")
+      .on(table.deadlineId, table.threshold, table.channel, table.recipientUserId)
+      .where(sql`${table.deadlineId} is not null`),
   ],
 ).enableRLS();
 

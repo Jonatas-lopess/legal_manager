@@ -89,13 +89,42 @@ export async function createDeadline(
   client: PoolClient,
   tenantId: string,
   matterId: string,
-  overrides: { isFatal?: boolean; countingMode?: "dias_uteis" | "dias_corridos" } = {},
+  overrides: {
+    isFatal?: boolean;
+    countingMode?: "dias_uteis" | "dias_corridos";
+    days?: number;
+    startDate?: Date | string;
+    description?: string;
+    status?: "pendente" | "cumprido";
+    dueDate?: Date | string;
+  } = {},
 ) {
+  const startDate = overrides.startDate ?? new Date();
+  const dueDate = overrides.dueDate ?? addDays(startDate, 5);
   const { rows } = await client.query<{ id: string }>(
-    "insert into deadlines (tenant_id, matter_id, is_fatal, counting_mode) values ($1, $2, $3, $4) returning id",
-    [tenantId, matterId, overrides.isFatal ?? false, overrides.countingMode ?? "dias_uteis"],
+    `insert into deadlines
+       (tenant_id, matter_id, is_fatal, counting_mode, days, start_date, description, status, due_date)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id`,
+    [
+      tenantId,
+      matterId,
+      overrides.isFatal ?? false,
+      overrides.countingMode ?? "dias_uteis",
+      overrides.days ?? 5,
+      startDate,
+      overrides.description ?? "Prazo Teste",
+      overrides.status ?? "pendente",
+      dueDate,
+    ],
   );
   return { id: rows[0]!.id, tenantId };
+}
+
+function addDays(date: Date | string, days: number): Date {
+  const base = date instanceof Date ? date : new Date(date);
+  const result = new Date(base);
+  result.setDate(result.getDate() + days);
+  return result;
 }
 
 export async function createPayment(
@@ -121,4 +150,72 @@ export async function attachDeadlineTag(
     "insert into deadline_tags (tenant_id, deadline_id, tag_id) values ($1, $2, $3)",
     [tenantId, deadlineId, tagId],
   );
+}
+
+export async function createCivilHoliday(
+  client: PoolClient,
+  overrides: { date?: Date | string; uf?: string | null; name?: string } = {},
+) {
+  const { rows } = await client.query<{ id: string }>(
+    "insert into civil_holidays (date, uf, name) values ($1, $2, $3) returning id",
+    [overrides.date ?? new Date(), overrides.uf ?? null, overrides.name ?? "Feriado Teste"],
+  );
+  return { id: rows[0]!.id };
+}
+
+export async function createForensicHoliday(
+  client: PoolClient,
+  overrides: {
+    startDate?: Date | string;
+    endDate?: Date | string;
+    description?: string;
+    sourceYear?: number;
+  } = {},
+) {
+  const startDate = overrides.startDate ?? new Date();
+  const { rows } = await client.query<{ id: string }>(
+    "insert into forensic_holidays (start_date, end_date, description, source_year) values ($1, $2, $3, $4) returning id",
+    [
+      startDate,
+      overrides.endDate ?? startDate,
+      overrides.description ?? "Recesso Forense Teste",
+      overrides.sourceYear ?? new Date().getFullYear(),
+    ],
+  );
+  return { id: rows[0]!.id };
+}
+
+export async function createNotification(
+  client: PoolClient,
+  tenantId: string,
+  recipientUserId: string,
+  overrides: {
+    channel?: "email" | "in_app";
+    category?: string;
+    deadlineId?: string | null;
+    threshold?: string | null;
+    payload?: object;
+    status?: "pending" | "sent" | "failed";
+    readAt?: Date | null;
+    sentAt?: Date | null;
+  } = {},
+) {
+  const { rows } = await client.query<{ id: string }>(
+    `insert into notifications
+       (tenant_id, recipient_user_id, channel, category, deadline_id, threshold, payload, status, read_at, sent_at)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id`,
+    [
+      tenantId,
+      recipientUserId,
+      overrides.channel ?? "email",
+      overrides.category ?? "deadline_alert",
+      overrides.deadlineId ?? null,
+      overrides.threshold ?? "5_dias_uteis",
+      JSON.stringify(overrides.payload ?? {}),
+      overrides.status ?? "pending",
+      overrides.readAt ?? null,
+      overrides.sentAt ?? null,
+    ],
+  );
+  return { id: rows[0]!.id, tenantId };
 }
