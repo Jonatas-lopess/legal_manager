@@ -1,4 +1,4 @@
-import { Route, Switch } from "wouter";
+import { Link, Route, Switch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { AuthProvider, useAuth } from "@/modules/tenants/components/AuthProvider";
 import { LoginForm } from "@/modules/tenants/components/LoginForm";
@@ -6,6 +6,7 @@ import { MembersTable } from "@/modules/tenants/components/MembersTable";
 import { RequireAuth } from "@/modules/tenants/components/RequireAuth";
 import { ResetPasswordForm } from "@/modules/tenants/components/ResetPasswordForm";
 import { logout } from "@/modules/tenants/tenants.controller";
+import { ClientsTable } from "@/modules/clients/components/ClientsTable";
 
 const moduleRoutes = [
   { path: "/clients", label: "Clientes" },
@@ -22,7 +23,20 @@ function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between border-b p-4">
-        <span className="font-semibold">Legal Manager</span>
+        <div className="flex items-center gap-6">
+          <Link href="/" className="font-semibold">
+            Legal Manager
+          </Link>
+          {user && (
+            <nav className="flex gap-4 text-sm text-muted-foreground">
+              {moduleRoutes.map(({ path, label }) => (
+                <Link key={path} href={path} className="hover:text-foreground hover:underline">
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          )}
+        </div>
         {user && (
           <Button
             variant="ghost"
@@ -45,11 +59,16 @@ function ProtectedApp() {
   return (
     <RequireAuth>
       <Switch>
-        {moduleRoutes.map(({ path, label }) => (
-          <Route key={path} path={path}>
-            <div>{label}</div>
-          </Route>
-        ))}
+        <Route path="/clients">
+          <ClientsTable />
+        </Route>
+        {moduleRoutes
+          .filter(({ path }) => path !== "/clients")
+          .map(({ path, label }) => (
+            <Route key={path} path={path}>
+              <div>{label}</div>
+            </Route>
+          ))}
         <Route path="/">
           <MembersTable />
         </Route>

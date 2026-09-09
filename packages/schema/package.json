@@ -6,6 +6,7 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "dependencies": {
+    "cpf-cnpj-validator": "^1.0.3",
     "zod": "^4.4.3"
   }
 }
