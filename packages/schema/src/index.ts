@@ -81,3 +81,11 @@ export type CreateClientInput = z.input<typeof createClientInputSchema>;
 // default), since `.partial()` drops the base schema's `.default()` too.
 export const updateClientInputSchema = createClientInputSchema.partial();
 export type UpdateClientInput = z.input<typeof updateClientInputSchema>;
+
+export const createCatalogItemInputSchema = z.object({
+  name: z.string().trim().min(1, "Nome é obrigatório"),
+});
+export type CreateCatalogItemInput = z.input<typeof createCatalogItemInputSchema>;
+
+export const updateCatalogItemInputSchema = createCatalogItemInputSchema.partial();
+export type UpdateCatalogItemInput = z.input<typeof updateCatalogItemInputSchema>;
