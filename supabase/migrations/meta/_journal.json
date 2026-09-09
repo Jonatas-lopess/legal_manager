@@ -99,6 +99,13 @@
       "when": 1788981100206,
       "tag": "20260909191140_notifications-dedup-per-recipient",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1788984140674,
+      "tag": "20260909200220_audit-log-tenant-delete-fk-fix",
+      "breakpoints": true
     }
   ]
 }

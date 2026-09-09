@@ -150,6 +150,29 @@ describe("audit_log", () => {
     });
   });
 
+  it("deleting a tenant with audited children succeeds and nulls out their audit_log tenant_id", async () => {
+    await withTx(async (tx) => {
+      const tenantA = await createTenant(tx.client, "Tenant A");
+      const userA = await createUser(tx.client, tenantA.id, "advogado");
+
+      await tx.asUser(userA.id);
+      const matterA = await createMatter(tx.client, tenantA.id);
+      const paymentA = await createPayment(tx.client, tenantA.id, matterA.id);
+
+      await tx.asSuperuser();
+      await tx.client.query("delete from tenants where id = $1", [tenantA.id]);
+
+      const { rows } = await tx.client.query<{ tenant_id: string | null; user_id: string | null }>(
+        `select tenant_id, user_id from audit_log
+         where entity in ('matters', 'payments') and entity_id in ($1, $2) and action = 'delete'`,
+        [matterA.id, paymentA.id],
+      );
+      expect(rows).toHaveLength(2);
+      expect(rows.every((row) => row.tenant_id === null)).toBe(true);
+      expect(rows.every((row) => row.user_id === null)).toBe(true);
+    });
+  });
+
   it("cross-tenant read of audit_log returns zero rows", async () => {
     await withTx(async (tx) => {
       const tenantA = await createTenant(tx.client, "Tenant A");
