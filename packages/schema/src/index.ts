@@ -156,3 +156,27 @@ export type CreateTagInput = z.input<typeof createTagInputSchema>;
 
 export const updateTagInputSchema = createTagInputSchema.partial();
 export type UpdateTagInput = z.input<typeof updateTagInputSchema>;
+
+// Mirrors `packages/db/src/schema.ts`'s `paymentStatusEnum`.
+export const paymentStatuses = ["pago", "pendente"] as const;
+export type PaymentStatus = (typeof paymentStatuses)[number];
+
+// Same uuid-shape check as `optionalUuid()` above, but non-nullable — unlike
+// a matter's `clientId`/`matterCatalogItemId`, a payment always belongs to a
+// specific matter (no rascunho-style "not chosen yet" state). RLS + the
+// composite FK (packages/db/src/schema.ts) reject a matter from another
+// tenant; this only rejects a value that isn't even uuid-shaped.
+const matterIdRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// No `.partial()` derivative here on purpose — payments has no general
+// field-patch (PLANNING §4: "sem split"), only a status toggle that reads
+// the row's current status itself (payments.service.ts) rather than taking
+// a target status as input, so the zod v4 `.partial()`-doesn't-strip-
+// `.default()` bug ticket 03 flagged for `matters`/`clients` doesn't apply:
+// there's no partial schema to trip on it.
+export const createPaymentInputSchema = z.object({
+  matterId: z.string().trim().regex(matterIdRegex, "ID de processo inválido"),
+  value: z.coerce.number().positive("Valor deve ser maior que zero"),
+  status: z.enum(paymentStatuses).default("pendente"),
+});
+export type CreatePaymentInput = z.input<typeof createPaymentInputSchema>;

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getMatter, type Matter, type MatterStatus } from "../matters.controller";
 import { MatterDialog } from "./MatterDialog";
 import { TagPicker } from "../../tags/components/TagPicker";
+import { PaymentPanel } from "../../payments/components/PaymentPanel";
 
 const statusLabels: Record<MatterStatus, string> = {
   rascunho: "Rascunho",
@@ -105,15 +106,17 @@ export function MatterDetailView() {
         </CardContent>
       </Card>
 
-      {/* Payments slot — ticket 05 (payments-matter-scoped-role-gated) fills
-          this section in (and is responsible for hiding it entirely from
-          `secretario`, per PLANNING §8 — this ticket does not gate it). */}
+      {/* Payments slot — filled by ticket 05 (payments-matter-scoped-role-
+          gated). PaymentPanel (apps/web/src/modules/payments/components/
+          PaymentPanel.tsx) owns the payment list, create form, and
+          per-row status-toggle, and hides itself entirely for `secretario`
+          (PLANNING §8) via its own `getCurrentUser()` check. */}
       <Card data-slot="matter-payments-panel">
         <CardHeader>
           <CardTitle>Financeiro</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Nenhum pagamento registrado ainda.</p>
+          <PaymentPanel matterId={matter.id} />
         </CardContent>
       </Card>
 
