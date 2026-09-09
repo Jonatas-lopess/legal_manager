@@ -35,3 +35,16 @@ restriction on `payments` at this layer — PLANNING §8's
 `secretario`-blocked-from-payments rule is `clients-catalog-matters-crud`'s
 app-layer job, deliberately out of scope here. Tests in
 `04-payments-audit-log.test.ts`, 8/8 passing.
+
+**Follow-up bug, found during `deadlines-engine-alerts` and fixed 2026-09-09**:
+deleting a tenant with audited children failed with an `audit_log` FK
+violation on cascade. `audit_log_row_change()` inserted new rows referencing
+`tenant_id`/`user_id` that were already gone mid-cascade (a tenant delete
+cascades to `clients`/`matters`/`payments`/`users`, and each cascaded
+client/matter/payment delete fires the trigger) — the `ON DELETE SET NULL`
+above only rewrites pre-existing `audit_log` rows, not new inserts. Fixed in
+migration `20260909200220_audit-log-tenant-delete-fk-fix.sql`: the trigger
+now checks existence before writing each column, null instead of violating
+when the referenced row is mid-deletion. Regression test added to
+`04-payments-audit-log.test.ts`. Left ~394 orphaned test tenants on the local
+stack (this bug prevented their deletion); deleted once the fix landed.
