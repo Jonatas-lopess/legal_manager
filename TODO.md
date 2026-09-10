@@ -49,7 +49,11 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
 
 ## dashboard-reports
 
-- Status: `blocked` (waiting on Figma wireframes — user drafting manually)
+- Status: `ready-for-agent` (tickets published 2026-09-10; nav-shape resolved top bar per wireframe, over PLANNING §2's sidebar reuse plan)
 - Spec: `.scratch/dashboard-reports/spec.md`
-- Issues: none yet — spec is a draft pending screens doc
+- Issues:
+  - `01-nav-shell-metricas-core-cards.md` — ready-for-agent
+  - `02-metricas-charts-breakdowns.md` — ready-for-agent
+  - `03-prazos-page.md` — ready-for-agent
+  - `04-prazos-criticos-teaser.md` — ready-for-agent
 - Depends on: `postgres-schema-rls`, `tenants-auth-invite`, `clients-catalog-matters-crud`, `deadlines-engine-alerts`
