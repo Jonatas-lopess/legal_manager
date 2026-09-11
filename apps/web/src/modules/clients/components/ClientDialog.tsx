@@ -7,16 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { maskCNPJ, maskCPF, maskPhone } from "@/lib/masks";
-import { createClient, updateClient, clientStatuses, type Client } from "../clients.controller";
+import { createClient, updateClient, type Client } from "../clients.controller";
 import { createClientInputSchema } from "../clients.schema";
 
 type FormInput = z.input<typeof createClientInputSchema>;
 type FormOutput = z.output<typeof createClientInputSchema>;
-
-const statusLabels: Record<(typeof clientStatuses)[number], string> = {
-  ativo: "Ativo",
-  inativo: "Inativo",
-};
 
 function toFormValues(client: Client | null): FormInput {
   return {
@@ -113,26 +108,6 @@ function ClientDialogContent({
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="client-status">Status</Label>
-            <select
-              id="client-status"
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-              {...register("status")}
-            >
-              {clientStatuses.map((s) => (
-                <option key={s} value={s}>
-                  {statusLabels[s]}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="client-birth-date">Data de nascimento</Label>
-            <Input id="client-birth-date" type="date" {...register("birthDate")} />
-          </div>
-
-          <div className="flex flex-col gap-2">
             <Label htmlFor="client-cpf">CPF</Label>
             <Controller
               control={control}
@@ -179,6 +154,11 @@ function ClientDialogContent({
           <div className="flex flex-col gap-2">
             <Label htmlFor="client-rg">RG</Label>
             <Input id="client-rg" {...register("rg")} />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="client-birth-date">Data de nascimento</Label>
+            <Input id="client-birth-date" type="date" {...register("birthDate")} />
           </div>
 
           <div className="flex flex-col gap-2">
