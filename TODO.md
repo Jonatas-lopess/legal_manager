@@ -59,6 +59,19 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
 - See `01-nav-shell-metricas-core-cards.md` Comments for the 2026-09-11 code-review pass (two confirmed `payments.created_at` UTC-vs-local-calendar-date bugs found and fixed).
 - Depends on: `postgres-schema-rls`, `tenants-auth-invite`, `clients-catalog-matters-crud`, `deadlines-engine-alerts`
 
+## ui-shell-clientes-casos-config
+
+- Status: `ready-for-agent`
+- Spec: `.scratch/ui-shell-clientes-casos-config/spec.md`
+- Issues:
+  - `01-unified-app-shell.md` — ready-for-agent
+  - `02-clientes-page.md` — ready-for-agent
+  - `03-casos-page-and-prazos-card.md` — ready-for-agent
+  - `04-configuracoes-equipe-catalogo-tags.md` — ready-for-agent
+  - `05-configuracoes-auditoria.md` — ready-for-agent
+- Wireframe node ids filled in (2026-09-11) — fidelity check against the real frames found real gaps (matters.numero_cnj, payments.description, team member removal, Configurações' Catálogo/Tags/Auditoria are compact not tabular); see spec.md's "Fidelity check against the drawn frames".
+- Depends on: `postgres-schema-rls`, `tenants-auth-invite`, `clients-catalog-matters-crud`, `deadlines-engine-alerts`, `dashboard-reports`
+
 ## deploy-pipeline
 
 - Status: `ready-for-agent`
