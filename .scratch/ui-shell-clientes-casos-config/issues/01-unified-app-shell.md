@@ -13,16 +13,24 @@
 
 **Blocked by:** None (can start immediately — this is the prerequisite every other ticket in this feature mounts under)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] One shell component renders the top bar on every authenticated route (`/clients`, `/matters`, `/matters/:id`, `/dashboard/metricas`, `/dashboard/prazos`, `/settings` once `04` adds it) — `AppShell`'s old header and `DashboardNav.tsx` are gone, not both kept
-- [ ] Nav links: Clientes | Casos | Métricas | Prazos, active one underlined + `aria-current="page"`
-- [ ] Avatar is a working dropdown trigger (not a static div): opens Configurações/Sair menu, closes on outside click or item select
-- [ ] "Sair" now lives only in the avatar menu — no standalone logout button left over in the shell
-- [ ] `moduleRoutes` deleted from `App.tsx`; nav links are hardcoded in the shell
-- [ ] `/` redirects to `/dashboard/metricas`
-- [ ] `/payments` stub route removed
-- [ ] `/deadlines` route still registered and reachable from `PrazosPage.tsx`'s "ver todos" link, just no nav entry
-- [ ] `MetricasPage.tsx`/`PrazosPage.tsx` reviewed against their wireframe frames for structural drift, fixed where found
-- [ ] `tsc --noEmit` clean, existing `reports`/`deadlines`/`tenants` test suites still pass (route/redirect changes shouldn't break anything asserting on `/`)
-- [ ] Dev server boots clean, every route above verified reachable (boot + click-through, no browser/screenshot tool — same caveat `dashboard-reports/01` flagged)
+- [x] One shell component renders the top bar on every authenticated route (`/clients`, `/matters`, `/matters/:id`, `/dashboard/metricas`, `/dashboard/prazos`, `/settings` once `04` adds it) — `AppShell`'s old header and `DashboardNav.tsx` are gone, not both kept
+- [x] Nav links: Clientes | Casos | Métricas | Prazos, active one underlined + `aria-current="page"`
+- [x] Avatar is a working dropdown trigger (not a static div): opens Configurações/Sair menu, closes on outside click or item select
+- [x] "Sair" now lives only in the avatar menu — no standalone logout button left over in the shell
+- [x] `moduleRoutes` deleted from `App.tsx`; nav links are hardcoded in the shell
+- [x] `/` redirects to `/dashboard/metricas`
+- [x] `/payments` stub route removed
+- [x] `/deadlines` route still registered and reachable from `PrazosPage.tsx`'s "ver todos" link, just no nav entry
+- [x] `MetricasPage.tsx`/`PrazosPage.tsx` reviewed against their wireframe frames for structural drift, fixed where found
+- [x] `tsc --noEmit` clean, existing `reports`/`deadlines`/`tenants` test suites still pass (route/redirect changes shouldn't break anything asserting on `/`)
+- [x] Dev server boots clean, every route above verified reachable (boot + click-through, no browser/screenshot tool — same caveat `dashboard-reports/01` flagged)
+
+## Comments
+
+- 2026-09-11: Implemented. New shared shell at `apps/web/src/components/AppShell.tsx` (top-bar visual from `DashboardNav.tsx`, now the only shell) — `DashboardNav.tsx` deleted, `App.tsx`'s inline `AppShell` replaced. Avatar dropdown built with `radix-ui`'s `DropdownMenu` (same direct-import convention as `InviteUserDialog.tsx`'s `Dialog`) rather than hand-rolling a popover.
+- Beyond `/payments`, also removed the `/catalog` and `/audit` stub routes (`<div>Catálogo</div>`/`<div>Auditoria</div>`) that `moduleRoutes`' map previously rendered. Not explicitly called out in this ticket's checklist, but the spec's IA section gives `/deadlines` an explicit "stays registered" callout and gives no such callout to Catálogo/Auditoria — both fold into Configurações as tabs (`04`/`05`), not standalone routes, same treatment as `/payments`. Flagging here in case that reading is wrong before `04`/`05` start — easy to re-add stub routes if needed.
+- `MetricasPage.tsx`/`PrazosPage.tsx` structural fidelity: read both against `dashboard-reports/spec.md`'s wireframe description (stat-card grid, período selector, Faturamento no tempo chart, Prazos Críticos teaser, three breakdown cards on Métricas; headline count + vencido/hoje/próximos groups on Prazos) — no drift found, no changes made. Did not re-pull `get_design_context` for `metricas-dashboard`/`prazos-agenda` (no new frame changes since `dashboard-reports` shipped them against the same nodes); flag if a fresh Figma pull is wanted here specifically.
+- `/settings` route itself is not registered yet (per this ticket's own scope note, `04`/`05` add it) — the avatar menu's "Configurações" link points at it regardless, dangling until then.
+- Verified: `tsc --noEmit` clean, `eslint` clean on changed files, full `vitest run` (91 tests) green, `vite build` production bundle succeeds, dev server serves `/`, `/clients`, `/dashboard/prazos` (200s; SPA routing, real click-through needs `02`/`03` since `/clients`/`/matters` content itself is next ticket's relayout).

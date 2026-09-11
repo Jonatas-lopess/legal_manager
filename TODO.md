@@ -64,7 +64,7 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
 - Status: `ready-for-agent`
 - Spec: `.scratch/ui-shell-clientes-casos-config/spec.md`
 - Issues:
-  - `01-unified-app-shell.md` — ready-for-agent
+  - `01-unified-app-shell.md` — done
   - `02-clientes-page.md` — ready-for-agent
   - `03-casos-page-and-prazos-card.md` — ready-for-agent
   - `04-configuracoes-equipe-catalogo-tags.md` — ready-for-agent
