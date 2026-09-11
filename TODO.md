@@ -58,3 +58,10 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
   - `04-prazos-criticos-teaser.md` — done
 - See `01-nav-shell-metricas-core-cards.md` Comments for the 2026-09-11 code-review pass (two confirmed `payments.created_at` UTC-vs-local-calendar-date bugs found and fixed).
 - Depends on: `postgres-schema-rls`, `tenants-auth-invite`, `clients-catalog-matters-crud`, `deadlines-engine-alerts`
+
+## deploy-pipeline
+
+- Status: `ready-for-agent`
+- Spec: `.scratch/deploy-pipeline/spec.md`
+- PLANNING.md §7 step 7. Repo has no GitHub remote yet — a prerequisite this spec's Further Notes calls out.
+- Depends on: `postgres-schema-rls`, `tenants-auth-invite`, `clients-catalog-matters-crud`, `deadlines-engine-alerts`, `dashboard-reports`
