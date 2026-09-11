@@ -4,11 +4,15 @@
 
 **Blocked by:** `01` (needs the Métricas page shell, nav, and período-selector context this extends)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Faturamento no tempo renders one point per day across the selected período, values match `payments` fixtures (status `pago`, bucketed by `createdAt`); re-renders when período changes
-- [ ] Matters por status breakdown shows correct counts for all four statuses, tenant-scoped
-- [ ] Volume por item de catálogo shows top-N catalog items by matter count, remainder collapsed into "outros" when the catalog list exceeds N
-- [ ] Clientes ativos por status renders the `ativo`/`inativo` ratio correctly
-- [ ] Loading skeleton per section while queries resolve; zero-data tenant renders empty/zeroed chart and breakdowns, not broken
-- [ ] Integration test (real disposable Postgres): tenant isolation on each breakdown query, correct période-window filtering on Faturamento no tempo
+- [x] Faturamento no tempo renders one point per day across the selected período, values match `payments` fixtures (status `pago`, bucketed by `createdAt`); re-renders when período changes
+- [x] Matters por status breakdown shows correct counts for all four statuses, tenant-scoped
+- [x] Volume por item de catálogo shows top-N catalog items by matter count, remainder collapsed into "outros" when the catalog list exceeds N
+- [x] Clientes ativos por status renders the `ativo`/`inativo` ratio correctly
+- [x] Loading skeleton per section while queries resolve; zero-data tenant renders empty/zeroed chart and breakdowns, not broken
+- [x] Integration test (real disposable Postgres): tenant isolation on each breakdown query, correct période-window filtering on Faturamento no tempo
+
+## Comments
+
+Implemented alongside `01`/`03`/`04` in one pass — see `01`'s Comments for the full implementation summary, verification, and the 2026-09-11 code-review pass (two confirmed bugs fixed, both in this ticket's own `getFaturamentoNoTempo`/`sumPaymentsByDay` path: a `payments.created_at` UTC-vs-local-calendar-date mismatch on both the query's period-window boundary and the chart's day-bucketing key).

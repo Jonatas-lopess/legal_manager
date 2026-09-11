@@ -262,3 +262,37 @@ export async function listDeadlines(filter: ListDeadlinesFilter = {}): Promise<D
   if (error) throw error;
   return (data ?? []).map(toDeadline);
 }
+
+// --- Vencido/vence-em-breve heuristic — originally private to
+// DeadlinesTable.tsx, moved here (unchanged) so dashboard-reports can call
+// the exact same comparison instead of reimplementing it (that feature's
+// spec: "no separate report query"). Deliberately a plain local-date string
+// comparison, distinct from computeDueDate's UTC business-day precision
+// above — a lightweight heuristic for listing/report display, not a due-
+// date computation.
+
+export type DueDateHighlight = "vencido" | "vence_em_breve" | "on_track";
+
+function todayLocalIso(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function addLocalCalendarDays(iso: string, days: number): string {
+  const [year, month, day] = iso.split("-").map(Number);
+  const d = new Date(year, month - 1, day + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** A `cumprido` deadline is always "on_track" — once satisfied, overdue/
+ * vence-em-breve triage no longer applies to it (judgment call — the spec
+ * doesn't say either way). Otherwise: strictly past due -> "vencido"; due
+ * today through 5 calendar days out -> "vence_em_breve"; further out ->
+ * "on_track". */
+export function dueDateHighlight(dueDate: string, status: DeadlineStatus): DueDateHighlight {
+  if (status === "cumprido") return "on_track";
+  const today = todayLocalIso();
+  if (dueDate < today) return "vencido";
+  if (dueDate <= addLocalCalendarDays(today, 5)) return "vence_em_breve";
+  return "on_track";
+}

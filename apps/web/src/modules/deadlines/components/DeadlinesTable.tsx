@@ -4,8 +4,10 @@ import {
   listDeadlines,
   markDeadlineCumprido,
   deadlineStatuses,
+  dueDateHighlight,
   type Deadline,
   type DeadlineStatus,
+  type DueDateHighlight,
 } from "../deadlines.controller";
 import { listMatters, type Matter } from "../../matters/matters.controller";
 import { DeadlineTagPicker } from "../../tags/components/DeadlineTagPicker";
@@ -29,48 +31,21 @@ function matterLabel(matter: Matter): string {
   return `${matter.uf} — ${matter.description ?? matter.id.slice(0, 8)}`;
 }
 
-function todayIso(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
-
-function addCalendarDays(iso: string, days: number): string {
-  const [year, month, day] = iso.split("-").map(Number);
-  const d = new Date(year, month - 1, day + days);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-type Highlight = "vencido" | "vence_em_breve" | "on_track";
-
-/**
- * Lightweight client-side heuristic (spec: "a simple heuristic distinct
- * from the engine's business-day precision... no separate report query") —
- * plain ISO string comparison against today's local date, no business-day
- * awareness at all (unlike computeDueDate). A `cumprido` deadline is always
- * "on_track" here: once satisfied, overdue/vence-em-breve triage no longer
- * applies to it (judgment call — the spec doesn't say either way).
- */
-function dueDateHighlight(dueDate: string, status: DeadlineStatus): Highlight {
-  if (status === "cumprido") return "on_track";
-  const today = todayIso();
-  if (dueDate < today) return "vencido";
-  if (dueDate <= addCalendarDays(today, 5)) return "vence_em_breve";
-  return "on_track";
-}
-
-const highlightRowClass: Record<Highlight, string> = {
+// dueDateHighlight itself now lives in deadlines.service.ts (dashboard-
+// reports reuses it) — this file keeps only the presentation mapping.
+const highlightRowClass: Record<DueDateHighlight, string> = {
   vencido: "bg-red-50",
   vence_em_breve: "bg-amber-50",
   on_track: "",
 };
 
-const highlightLabel: Record<Highlight, string | null> = {
+const highlightLabel: Record<DueDateHighlight, string | null> = {
   vencido: "Vencido",
   vence_em_breve: "Vence em breve",
   on_track: null,
 };
 
-const highlightBadgeClass: Record<Highlight, string> = {
+const highlightBadgeClass: Record<DueDateHighlight, string> = {
   vencido: "bg-red-100 text-red-800",
   vence_em_breve: "bg-amber-100 text-amber-800",
   on_track: "",

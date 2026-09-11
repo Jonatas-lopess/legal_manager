@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { computeDueDate } from "../deadlines.service";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { computeDueDate, dueDateHighlight } from "../deadlines.service";
 
 // Pure fixture-table tests (spec's Testing Decisions) — no DB, no network.
 // Weekday reference for every fixture date used below (all UTC):
@@ -99,6 +99,40 @@ describe("computeDueDate — dias_uteis", () => {
   it("accepts a plain string array as well as a Set for nonBusinessDates", () => {
     const due = computeDueDate("2026-05-04", 5, "dias_uteis", ["2026-05-08"]);
     expect(due).toBe("2026-05-12");
+  });
+});
+
+// dueDateHighlight — the listing/report vencido/vence-em-breve heuristic
+// (moved here from DeadlinesTable.tsx so dashboard-reports can reuse it
+// instead of reimplementing the comparison, per that feature's spec).
+// System clock pinned so "today" is deterministic in every case.
+describe("dueDateHighlight", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 10)); // 2026-05-10, local time
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("a pendente deadline already past due is vencido", () => {
+    expect(dueDateHighlight("2026-05-09", "pendente")).toBe("vencido");
+  });
+
+  it("a pendente deadline due today is vence_em_breve", () => {
+    expect(dueDateHighlight("2026-05-10", "pendente")).toBe("vence_em_breve");
+  });
+
+  it("a pendente deadline due within the next 5 calendar days is vence_em_breve", () => {
+    expect(dueDateHighlight("2026-05-15", "pendente")).toBe("vence_em_breve");
+  });
+
+  it("a pendente deadline due more than 5 calendar days out is on_track", () => {
+    expect(dueDateHighlight("2026-05-16", "pendente")).toBe("on_track");
+  });
+
+  it("a cumprido deadline is always on_track, even if its due date is in the past", () => {
+    expect(dueDateHighlight("2026-05-09", "cumprido")).toBe("on_track");
   });
 });
 

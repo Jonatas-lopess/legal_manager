@@ -49,11 +49,12 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
 
 ## dashboard-reports
 
-- Status: `ready-for-agent` (tickets published 2026-09-10; nav-shape resolved top bar per wireframe, over PLANNING §2's sidebar reuse plan)
+- Status: `done`
 - Spec: `.scratch/dashboard-reports/spec.md`
 - Issues:
-  - `01-nav-shell-metricas-core-cards.md` — ready-for-agent
-  - `02-metricas-charts-breakdowns.md` — ready-for-agent
-  - `03-prazos-page.md` — ready-for-agent
-  - `04-prazos-criticos-teaser.md` — ready-for-agent
+  - `01-nav-shell-metricas-core-cards.md` — done
+  - `02-metricas-charts-breakdowns.md` — done
+  - `03-prazos-page.md` — done
+  - `04-prazos-criticos-teaser.md` — done
+- See `01-nav-shell-metricas-core-cards.md` Comments for the 2026-09-11 code-review pass (two confirmed `payments.created_at` UTC-vs-local-calendar-date bugs found and fixed).
 - Depends on: `postgres-schema-rls`, `tenants-auth-invite`, `clients-catalog-matters-crud`, `deadlines-engine-alerts`

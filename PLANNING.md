@@ -25,7 +25,7 @@
 | Item | Local no ManagerDesk | Como reaproveitar |
 |---|---|---|
 | UI kit completo (Radix + Tailwind + CVA) | `src/components/ui/*` (~40 componentes) | Copiar quase 1:1 — é agnóstico de domínio |
-| Shell de página/relatório | `src/components/panel/panel-kit.tsx` (`AppShell`, `StatCard`, `TableCard`, `StatusBadge`, `currency`) | Base pronta para telas de lista e dashboard |
+| Shell de página/relatório | `src/components/panel/panel-kit.tsx` (`AppShell`, `StatCard`, `TableCard`, `StatusBadge`, `currency`) | Base pronta para telas de lista e dashboard — **decisão 2026-09-10**: as telas `/dashboard/metricas` e `/dashboard/prazos` (`dashboard-reports`) não reaproveitam o shell de sidebar do ManagerDesk; usam nav de topo própria (`DashboardNav`), conforme wireframe. Demais telas seguem com a sidebar do `AppShell` atual. |
 | Padrão de schema + validação | `src/db/schema.ts` → `drizzle-zod` em `validations.ts` | Mesmo padrão Drizzle, trocar `sqlite-core` por `pg-core` |
 | Padrão de formulário | `service-dialog.tsx`, `financial-dialog.tsx` (react-hook-form + zodResolver) | Reaproveitar arquitetura de dialog/form, trocar campos |
 | Máscaras BR | `src/lib/masks.ts` (CPF, CNPJ, telefone, moeda) + pacote `cpf-cnpj-validator` | Direto — domínio brasileiro é o mesmo |

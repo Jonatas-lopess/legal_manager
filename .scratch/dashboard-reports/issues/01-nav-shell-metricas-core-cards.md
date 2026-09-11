@@ -4,14 +4,25 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Top-bar nav renders on both dashboard routes: logo, "Métricas"/"Prazos" links (active link underlined), user chip
-- [ ] `/dashboard/metricas` route registered (wouter); `/dashboard/prazos` route registered and reachable via the nav link, even before `03` fills it in
-- [ ] Período selector (5 buckets, default 30 dias) re-scopes `Faturamento`
-- [ ] `Clientes ativos`, `Matters em andamento`, `A receber` render live, correct counts/sums, not affected by período selector
-- [ ] `Faturamento` renders correct BRL sum for the selected período, updates when período changes
-- [ ] `Faturamento`/`A receber` cards are hidden for the `secretario` role (matches `payments` CRUD's existing exclusion of that role, PLANNING §8); `Clientes ativos`/`Matters em andamento` remain visible to all roles
-- [ ] Loading skeleton per card while queries resolve; zero-data tenant renders 0/BRL 0,00 on every card, not broken
-- [ ] `reports.repository.ts` only reaches `clients`/`matters`/`payments` through their public controllers
-- [ ] Integration test (real disposable Postgres, same harness as other modules): tenant isolation on every count/sum above, correct période-window filtering on `Faturamento`
+- [x] Top-bar nav renders on both dashboard routes: logo, "Métricas"/"Prazos" links (active link underlined), user chip
+- [x] `/dashboard/metricas` route registered (wouter); `/dashboard/prazos` route registered and reachable via the nav link, even before `03` fills it in
+- [x] Período selector (5 buckets, default 30 dias) re-scopes `Faturamento`
+- [x] `Clientes ativos`, `Matters em andamento`, `A receber` render live, correct counts/sums, not affected by período selector
+- [x] `Faturamento` renders correct BRL sum for the selected período, updates when período changes
+- [x] `Faturamento`/`A receber` cards are hidden for the `secretario` role (matches `payments` CRUD's existing exclusion of that role, PLANNING §8); `Clientes ativos`/`Matters em andamento` remain visible to all roles
+- [x] Loading skeleton per card while queries resolve; zero-data tenant renders 0/BRL 0,00 on every card, not broken
+- [x] `reports.repository.ts` only reaches `clients`/`matters`/`payments` through their public controllers
+- [x] Integration test (real disposable Postgres, same harness as other modules): tenant isolation on every count/sum above, correct période-window filtering on `Faturamento`
+- [x] UI verified by running the dev server (see Comments — no browser/screenshot tool available, boot-only verification)
+
+## Comments
+
+Implemented: `apps/web/src/modules/reports/*` filled in from stub (`reports.schema.ts`/`reports.repository.ts`/`reports.service.ts`/`reports.controller.ts`), `DashboardNav.tsx`/`MetricasPage.tsx`/`PrazosPage.tsx`, `App.tsx` wired to swap `AppShell`'s header for `DashboardNav` under `/dashboard/*` and register both routes. `deadlines.service.ts`'s private vencido/vence-em-breve heuristic extracted to an exported `dueDateHighlight` (re-exported via `deadlines.controller.ts`) so `03`/`04` delegate instead of reimplementing, per this ticket's own cross-module rule. Covers `02`/`03`/`04` as well — implemented as one pass, not four separate agent runs.
+
+Full `apps/web` suite: `tsc --noEmit` clean, `vitest run` on `reports`+`deadlines` 48/48 passing (includes the real-Postgres integration tests). Dev server boots clean on all three touched routes (`/`, `/dashboard/metricas`, `/dashboard/prazos`) and Vite transforms the new components without error — no browser/screenshot tool available in this environment, so this is boot-only verification, not a real click-through (flagging per this repo's own house rule, same as `deadlines-crud-listing-tags`'s `03`).
+
+**Code-review pass on the finished feature** found two confirmed bugs (both fixed): `reports.repository.ts`'s `sumPayments`/`sumPaymentsByDay` compared `payments.created_at` (a `timestamptz`) against bare local-calendar-date strings, so the query's day boundary silently drifted by the browser's UTC offset (e.g. `America/Sao_Paulo` local midnight is 03:00Z) — payments made in the last hours of a local day could be dropped from `Faturamento`/`A receber`; fixed by converting local calendar-date boundaries to explicit UTC instants before querying. `reports.service.ts`'s `getFaturamentoNoTempo` bucketed `payments.created_at` by its raw UTC calendar date (`.slice(0, 10)`) while looking those totals up against locally-enumerated date keys — same UTC/local mismatch, silently dropping a day's total from the chart; fixed by converting each row's timestamp to a local calendar-date key before bucketing. Also fixed: `DashboardNav`'s brand mark is now a `Link` to `/` (was a dead `<span>`), active nav link now carries `aria-current="page"`, `reports.prazos.test.ts`'s `afterEach` now uses `vi.resetAllMocks()` instead of `vi.clearAllMocks()` (each `it` already sets its own mock returns, so this only removes a latent "next test silently inherits a leftover mock" risk). `PLANNING.md` §2 updated to record the top-bar-nav-over-sidebar-reuse decision.
+
+Findings left as documented, non-blocking follow-ups (efficiency/duplication, not correctness): `getFaturamento`/`getAReceber`/`getFaturamentoNoTempo` each call `getCurrentUser()` independently (redundant auth round-trips per Métricas mount, no request-level caching); `getPrazosCriticos` fetches the tenant's entire `matters`/`clients`/`catalog_items` tables to resolve display labels rather than only the subset referenced by pending prazos; `reports.service.ts` duplicates `deadlines.service.ts`'s local-date arithmetic helpers instead of sharing them; `matterFallbackLabel` is a third independent copy of the same "cliente — item" formatting already in `DeadlinesTable.tsx`/`DeadlineTagPicker.tsx`; `MetricasPage.tsx` hand-rolls the same cancelled-flag/loading/error effect boilerplate nine times instead of a shared hook; `AppShell`'s `/dashboard` prefix check and `moduleRoutes`' hand-maintained exclusion list are route-architecture debt that will need revisiting before a third nav shape is added.
