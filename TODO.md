@@ -66,7 +66,7 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
 - Issues:
   - `01-unified-app-shell.md` — done
   - `02-clientes-page.md` — done
-  - `03-casos-page-and-prazos-card.md` — ready-for-agent
+  - `03-casos-page-and-prazos-card.md` — done
   - `04-configuracoes-equipe-catalogo-tags.md` — ready-for-agent
   - `05-configuracoes-auditoria.md` — ready-for-agent
 - Wireframe node ids filled in (2026-09-11) — fidelity check against the real frames found real gaps (matters.numero_cnj, payments.description, team member removal, Configurações' Catálogo/Tags/Auditoria are compact not tabular); see spec.md's "Fidelity check against the drawn frames".
