@@ -9,7 +9,7 @@
 // bare specifiers aren't valid unprefixed in Deno).
 import { createClient } from "npm:@supabase/supabase-js@2.49.0";
 import { Pool } from "npm:pg@8.23.0";
-import { HttpError, inviteUser } from "./service.ts";
+import { HttpError, inviteUser, removeMember } from "./service.ts";
 
 declare const Deno: {
   env: { get(key: string): string | undefined };
@@ -42,8 +42,12 @@ function jsonResponse(body: unknown, status: number): Response {
   });
 }
 
+// Routed by HTTP method, one action per verb (ticket 04's call — a body
+// discriminator was the other option, but `inviteUser`'s body has no such
+// field today and this avoids changing its shape): POST invites, DELETE
+// removes a member.
 Deno.serve(async (req: Request) => {
-  if (req.method !== "POST") {
+  if (req.method !== "POST" && req.method !== "DELETE") {
     return jsonResponse({ error: "Method Not Allowed" }, 405);
   }
 
@@ -58,8 +62,13 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const result = await inviteUser({ authClient, authAdmin, db }, jwt, body);
-    return jsonResponse(result, 201);
+    if (req.method === "POST") {
+      const result = await inviteUser({ authClient, authAdmin, db }, jwt, body);
+      return jsonResponse(result, 201);
+    }
+
+    const result = await removeMember({ authClient, authAdmin, db }, jwt, body);
+    return jsonResponse(result, 200);
   } catch (error) {
     if (error instanceof HttpError) {
       return jsonResponse({ error: error.message }, error.status);

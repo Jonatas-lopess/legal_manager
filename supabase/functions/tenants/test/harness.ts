@@ -80,8 +80,12 @@ export async function seedTenantWithAdmin(): Promise<SeededTenant> {
   return { tenantId, adminId: data.user.id, adminEmail: email, adminPassword: password };
 }
 
-/** A non-admin member of `tenantId`, for the "rejected" test paths. */
-export async function seedMember(tenantId: string, role: "advogado" | "secretario") {
+/** A member of `tenantId` with the given role — originally just non-admin
+ * members for the "rejected" test paths, "admin" added so removeMember's
+ * tests can seed a *second* admin (e.g. to exercise self-removal being
+ * blocked even when another admin exists, distinct from the last-admin
+ * guardrail). */
+export async function seedMember(tenantId: string, role: "admin" | "advogado" | "secretario") {
   const suffix = randomUUID();
   const email = `${role}-${suffix}@test.local`;
   const password = `Senha-${suffix}`;

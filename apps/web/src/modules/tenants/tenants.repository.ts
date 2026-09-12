@@ -1,6 +1,6 @@
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
-import type { InviteUserInput, LoginInput } from "@legal-manager/schema";
+import type { InviteUserInput, LoginInput, RemoveMemberInput } from "@legal-manager/schema";
 
 export async function signInWithPassword(input: LoginInput) {
   return supabase.auth.signInWithPassword(input);
@@ -61,6 +61,20 @@ export async function fetchTenantMembers() {
 
 export async function inviteUser(input: InviteUserInput) {
   return supabase.functions.invoke<{ id: string; tenantId: string; role: string; email: string }>("tenants", {
+    body: input,
+  });
+}
+
+/**
+ * Same reasoning as `inviteUser`: `public.users` has no client-writable
+ * delete grant (packages/db/README.md's RLS section), so this proxies to the
+ * `tenants` Edge Function too — routed by HTTP method (DELETE here, POST for
+ * invite) rather than a body discriminator, see
+ * supabase/functions/tenants/index.ts.
+ */
+export async function removeMember(input: RemoveMemberInput) {
+  return supabase.functions.invoke<{ id: string }>("tenants", {
+    method: "DELETE",
     body: input,
   });
 }

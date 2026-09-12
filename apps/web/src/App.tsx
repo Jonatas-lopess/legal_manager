@@ -10,6 +10,7 @@ import { DeadlinesTable } from "@/modules/deadlines/components/DeadlinesTable";
 import { MetricasPage } from "@/modules/reports/components/MetricasPage";
 import { PrazosPage } from "@/modules/reports/components/PrazosPage";
 import { AppShell } from "@/components/AppShell";
+import { SettingsPage } from "@/components/SettingsPage";
 
 function ProtectedApp() {
   return (
@@ -32,6 +33,9 @@ function ProtectedApp() {
         </Route>
         <Route path="/dashboard/prazos">
           <PrazosPage />
+        </Route>
+        <Route path="/settings">
+          <SettingsPage />
         </Route>
         <Route path="/">
           <Redirect to="/dashboard/metricas" />

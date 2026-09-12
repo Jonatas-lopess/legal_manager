@@ -10,6 +10,7 @@ export {
   getCurrentUser,
   listMembers,
   inviteUser,
+  removeMember,
   subscribeToAuthChanges,
   type CurrentUser,
   type Member,
