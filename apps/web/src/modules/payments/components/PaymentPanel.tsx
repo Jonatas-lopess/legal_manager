@@ -15,12 +15,20 @@ const statusLabels: Record<Payment["status"], string> = {
   pendente: "Pendente",
 };
 
+// Monochrome slate + uppercase label — same status-pill convention this
+// ticket applies everywhere else (casos-lista's STATUS column, dashboard-
+// reports' Vencido/Fatal badges), replacing the emerald/amber colored
+// badges this panel used before.
+const STATUS_PILL_CLASS = "rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase text-foreground";
+
 /**
  * Fills `MatterDetailView.tsx`'s `data-slot="matter-payments-panel"`
- * placeholder (ticket 05): a matter's payment list (value formatted as
- * currency + status badge) plus a create form (value only — status is
- * implicitly `pendente` on create, PLANNING §4's simplified "sem split"
- * model) and a per-row status-toggle button.
+ * placeholder: a matter's payment list (description + value formatted as
+ * currency + status pill + a direction-specific action) plus a create form
+ * (free-text description + value — status is implicitly `pendente` on
+ * create, PLANNING §4's simplified "sem split" model, unchanged by ticket
+ * 03's `description` column addition: no parcela-number/total columns, no
+ * split logic).
  *
  * Hidden entirely for `secretario` (story 31): checked here via
  * `getCurrentUser()` before anything else, so the UI never even attempts a
@@ -32,6 +40,7 @@ export function PaymentPanel({ matterId }: PaymentPanelProps) {
   const [payments, setPayments] = React.useState<Payment[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [descriptionInput, setDescriptionInput] = React.useState("");
   const [valueInput, setValueInput] = React.useState("");
   const [busy, setBusy] = React.useState(false);
 
@@ -83,7 +92,8 @@ export function PaymentPanel({ matterId }: PaymentPanelProps) {
     if (!Number.isFinite(value) || value <= 0) return;
 
     void withBusyGuard(async () => {
-      await createPayment({ matterId, value });
+      await createPayment({ matterId, value, description: descriptionInput || undefined });
+      setDescriptionInput("");
       setValueInput("");
     });
   }
@@ -107,39 +117,43 @@ export function PaymentPanel({ matterId }: PaymentPanelProps) {
       {payments.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nenhum pagamento registrado ainda.</p>
       ) : (
-        <ul className="flex flex-col gap-2" aria-label="Pagamentos">
-          {payments.map((payment) => (
-            <li
-              key={payment.id}
-              className="flex items-center justify-between gap-2 rounded border px-3 py-1.5 text-sm"
-            >
-              <span>{currencyFormatter.format(payment.value)}</span>
-              <div className="flex items-center gap-2">
-                <span
-                  className={
-                    payment.status === "pago"
-                      ? "rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800"
-                      : "rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800"
-                  }
-                >
-                  {statusLabels[payment.status]}
-                </span>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={busy}
-                  onClick={() => handleToggle(payment.id)}
-                >
-                  Marcar como {payment.status === "pago" ? "pendente" : "pago"}
-                </Button>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b text-left text-muted-foreground">
+              <th className="p-2 font-medium">Parcela/Descrição</th>
+              <th className="p-2 font-medium">Valor</th>
+              <th className="p-2 font-medium">Status</th>
+              <th className="p-2" />
+            </tr>
+          </thead>
+          <tbody>
+            {payments.map((payment) => (
+              <tr key={payment.id} className="border-b last:border-0">
+                <td className="p-2">{payment.description ?? "—"}</td>
+                <td className="p-2 font-mono">{currencyFormatter.format(payment.value)}</td>
+                <td className="p-2">
+                  <span className={STATUS_PILL_CLASS}>{statusLabels[payment.status]}</span>
+                </td>
+                <td className="p-2 text-right">
+                  <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => handleToggle(payment.id)}>
+                    {payment.status === "pago" ? "Estornar" : "Marcar como pago"}
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
 
       <form onSubmit={handleCreate} className="flex flex-wrap items-center gap-2">
+        <Input
+          value={descriptionInput}
+          onChange={(e) => setDescriptionInput(e.target.value)}
+          placeholder="Nova descrição de pagamento..."
+          className="h-8 max-w-[16rem]"
+          aria-label="Descrição do pagamento"
+          disabled={busy}
+        />
         <Input
           value={valueInput}
           onChange={(e) => setValueInput(e.target.value)}

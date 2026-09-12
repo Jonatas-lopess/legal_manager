@@ -2,9 +2,13 @@ import * as React from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { listMatters, softDeleteMatter, matterStatuses, type Matter, type MatterStatus } from "../matters.controller";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { listMatters, matterStatuses, type Matter, type MatterStatus } from "../matters.controller";
 import { listClients, type Client } from "../../clients/clients.controller";
+import { listCatalogItems, type CatalogItem } from "../../catalog/catalog.controller";
 import { MatterDialog } from "./MatterDialog";
+import { matterCatalogLabel } from "./matterCatalogLabel";
 
 const statusLabels: Record<MatterStatus, string> = {
   rascunho: "Rascunho",
@@ -13,10 +17,26 @@ const statusLabels: Record<MatterStatus, string> = {
   arquivado: "Arquivado",
 };
 
+// Monochrome slate + uppercase label for every status pill — same deliberate
+// design-token decision dashboard-reports' Prazos page already applies
+// (search "no red/amber/green anywhere" in spec.md), not a per-status color.
+const STATUS_PILL_CLASS = "rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase text-foreground";
+
+/** "UF / Comarca / Município" — casos-lista's third column, a single
+ * composed cell rather than three separate columns (the wireframe draws
+ * one column for all three). Omits comarca/município when unset (a
+ * `rascunho` matter may only have `uf`). */
+function jurisdicaoLabel(matter: Matter): string {
+  return [matter.uf, matter.comarca, matter.municipio].filter(Boolean).join(" / ");
+}
+
+const SKELETON_ROW_COUNT = 4;
+
 export function MattersTable() {
   const [, navigate] = useLocation();
   const [matters, setMatters] = React.useState<Matter[]>([]);
   const [clients, setClients] = React.useState<Client[]>([]);
+  const [catalogItems, setCatalogItems] = React.useState<CatalogItem[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [search, setSearch] = React.useState("");
@@ -27,9 +47,11 @@ export function MattersTable() {
   );
 
   const clientNameById = React.useMemo(() => new Map(clients.map((c) => [c.id, c.name])), [clients]);
+  const catalogItemById = React.useMemo(() => new Map(catalogItems.map((c) => [c.id, c])), [catalogItems]);
 
   React.useEffect(() => {
     listClients().then(setClients).catch(() => {});
+    listCatalogItems().then(setCatalogItems).catch(() => {});
   }, []);
 
   const fetchMatters = React.useCallback(async () => {
@@ -56,54 +78,47 @@ export function MattersTable() {
     return () => clearTimeout(timer);
   }, [fetchMatters]);
 
-  async function handleSoftDelete(matter: Matter) {
-    if (!window.confirm("Excluir este processo? O registro é mantido para fins de auditoria.")) return;
-    try {
-      await softDeleteMatter(matter.id);
-      await fetchMatters();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível excluir o processo.");
-    }
+  function openCreateDialog() {
+    setDialogState({ mode: "create", matter: null });
   }
 
   return (
-    <div className="flex w-full max-w-4xl flex-col gap-4" data-testid="matters-table">
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">Processos</h1>
-        <Button onClick={() => setDialogState({ mode: "create", matter: null })}>Novo processo</Button>
-      </div>
-
-      <div className="flex gap-2">
-        <Input
-          placeholder="Buscar por descrição, UF, comarca ou município"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1"
-        />
-        <select
-          className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as MatterStatus | "")}
-        >
-          <option value="">Todos os status</option>
-          {matterStatuses.map((s) => (
-            <option key={s} value={s}>
-              {statusLabels[s]}
-            </option>
-          ))}
-        </select>
-        <select
-          className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-          value={clientFilter}
-          onChange={(e) => setClientFilter(e.target.value)}
-        >
-          <option value="">Todos os clientes</option>
-          {clients.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+    <div className="flex w-full max-w-5xl flex-col gap-4" data-testid="matters-table">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold">Casos</h1>
+        <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+          <Input
+            placeholder="Buscar por número ou título..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full max-w-xs"
+          />
+          <select
+            className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as MatterStatus | "")}
+          >
+            <option value="">Todos os status</option>
+            {matterStatuses.map((s) => (
+              <option key={s} value={s}>
+                {statusLabels[s]}
+              </option>
+            ))}
+          </select>
+          <select
+            className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+            value={clientFilter}
+            onChange={(e) => setClientFilter(e.target.value)}
+          >
+            <option value="">Todos os clientes</option>
+            {clients.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <Button onClick={openCreateDialog}>Novo caso</Button>
+        </div>
       </div>
 
       {error && (
@@ -112,48 +127,62 @@ export function MattersTable() {
         </p>
       )}
 
-      <div className="rounded-xl border">
-        {loading ? (
-          <p className="p-4 text-sm text-muted-foreground">Carregando...</p>
-        ) : matters.length === 0 ? (
-          <p className="p-4 text-sm text-muted-foreground">Nenhum processo encontrado.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-muted-foreground">
-                <th className="p-3 font-medium">Cliente</th>
-                <th className="p-3 font-medium">UF</th>
-                <th className="p-3 font-medium">Status</th>
-                <th className="p-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {matters.map((matter) => (
-                <tr key={matter.id} className="border-b last:border-0">
-                  <td className="p-3">
-                    {matter.clientId ? (clientNameById.get(matter.clientId) ?? "—") : "—"}
-                  </td>
-                  <td className="p-3 text-muted-foreground">{matter.uf}</td>
-                  <td className="p-3">{statusLabels[matter.status]}</td>
-                  <td className="p-3">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm" onClick={() => navigate(`/matters/${matter.id}`)}>
-                        Ver
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => setDialogState({ mode: "edit", matter })}>
-                        Editar
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleSoftDelete(matter)}>
-                        Excluir
-                      </Button>
-                    </div>
-                  </td>
+      <Card>
+        <CardContent className="p-0">
+          {loading ? (
+            <table className="w-full text-sm">
+              <tbody>
+                {Array.from({ length: SKELETON_ROW_COUNT }).map((_, i) => (
+                  <tr key={i} className="border-b last:border-0">
+                    <td className="p-3" colSpan={5}>
+                      <Skeleton className="h-5 w-full" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : matters.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 p-10 text-center">
+              <p className="text-sm text-muted-foreground">Nenhum caso encontrado.</p>
+              <Button onClick={openCreateDialog}>Novo caso</Button>
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="p-3 font-medium">Cliente</th>
+                  <th className="p-3 font-medium">Item de catálogo / Processo</th>
+                  <th className="p-3 font-medium">UF / Comarca / Município</th>
+                  <th className="p-3 font-medium">Status</th>
+                  <th className="p-3" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+              </thead>
+              <tbody>
+                {matters.map((matter) => (
+                  <tr
+                    key={matter.id}
+                    onClick={() => navigate(`/matters/${matter.id}`)}
+                    className="cursor-pointer border-b last:border-0 hover:bg-secondary/50"
+                  >
+                    <td className="p-3">{matter.clientId ? (clientNameById.get(matter.clientId) ?? "—") : "—"}</td>
+                    <td className="p-3">
+                      {matterCatalogLabel(
+                        matter,
+                        matter.matterCatalogItemId ? catalogItemById.get(matter.matterCatalogItemId) : undefined,
+                      )}
+                    </td>
+                    <td className="p-3 text-muted-foreground">{jurisdicaoLabel(matter)}</td>
+                    <td className="p-3">
+                      <span className={STATUS_PILL_CLASS}>{statusLabels[matter.status]}</span>
+                    </td>
+                    <td className="p-3 text-right text-muted-foreground">›</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </CardContent>
+      </Card>
 
       {dialogState && (
         <MatterDialog
