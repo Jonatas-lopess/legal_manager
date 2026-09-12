@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Unified app shell + Clientes/Casos/Configurações UI (wireframe parity)
 

@@ -19,15 +19,27 @@ Leaning (a), but this ticket is where it actually gets decided, not before.
 
 **Blocked by:** `01`, `04` (needs the Configurações tab shell/stub `04` builds)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `audit.schema.ts`/`repository.ts`/`service.ts`/`controller.ts` filled in from stub, following this module's own cross-module boundary rule (controller is the only public surface)
-- [ ] `listAuditLog` joins `users` for actor name/email, handles `user_id IS NULL` (deleted user) gracefully
-- [ ] No new migration — confirm `audit_log`/RLS/triggers already present (`postgres-schema-rls`) before writing anything DB-side
-- [ ] Auditoria tab: reverse-chronological narrative-line list (`{data} {hora}h | {ator} | {verbo} {entidade} #{id curto}`), no write controls
-- [ ] Verb/entity mapping matches the table above (Criou/Editou/Excluiu; Cliente/Caso/Pagamento), no invented sequential id — short UUID prefix only
-- [ ] Entidade/ação/date-range filter added above the list (usability addition, not a fidelity item) without changing the row format to a column table
-- [ ] RBAC decision made and documented in Comments below (admin-only vs. all-roles)
-- [ ] Integration test (real disposable Postgres, same harness as other modules): tenant isolation on `listAuditLog`, a seeded write to `clients`/`matters`/`payments` produces the expected log row
-- [ ] `tsc --noEmit` clean, `vitest run` passing including the new `audit` suite
-- [ ] Dev server verified: Auditoria tab renders real narrative-line rows after seeding a write elsewhere in the app, filter works, RBAC gate (whichever chosen) holds (boot + click-through)
+- [x] `audit.schema.ts`/`repository.ts`/`service.ts`/`controller.ts` filled in from stub, following this module's own cross-module boundary rule (controller is the only public surface)
+- [x] `listAuditLog` joins `users` for actor name/email, handles `user_id IS NULL` (deleted user) gracefully
+- [x] No new migration — confirm `audit_log`/RLS/triggers already present (`postgres-schema-rls`) before writing anything DB-side
+- [x] Auditoria tab: reverse-chronological narrative-line list (`{data} {hora}h | {ator} | {verbo} {entidade} #{id curto}`), no write controls
+- [x] Verb/entity mapping matches the table above (Criou/Editou/Excluiu; Cliente/Caso/Pagamento), no invented sequential id — short UUID prefix only
+- [x] Entidade/ação/date-range filter added above the list (usability addition, not a fidelity item) without changing the row format to a column table
+- [x] RBAC decision made and documented in Comments below (admin-only vs. all-roles)
+- [x] Integration test (real disposable Postgres, same harness as other modules): tenant isolation on `listAuditLog`, a seeded write to `clients`/`matters`/`payments` produces the expected log row
+- [x] `tsc --noEmit` clean, `vitest run` passing including the new `audit` suite
+- [x] Dev server verified: Auditoria tab renders real narrative-line rows after seeding a write elsewhere in the app, filter works, RBAC gate (whichever chosen) holds (boot + click-through)
+
+## Comments
+
+- 2026-09-11: Confirmed before writing anything DB-side, per this ticket's own checklist item — `packages/db/src/schema.ts`'s `auditLog` (`id`/`tenantId` SET NULL/`userId` SET NULL/`action` enum/`entity`/`entityId`/`createdAt`), the `audit_log_select_own_tenant` RLS policy, and the insert/update/delete triggers on `clients`/`matters`/`payments` are all already shipped (`postgres-schema-rls/04-payments-audit-log.md`, migrations `20260905023858_payments-audit-log.sql`/`..._rls.sql`/`20260909200220_audit-log-tenant-delete-fk-fix.sql`). No migration added.
+
+- **RBAC decision: (a), admin-only.** The tab is gated in `AuditSettings.tsx` via `useAuth()`'s `user?.role === "admin"` — same pattern `MembersTable.tsx`/`PaymentPanel.tsx` already use, checked client-side before `listAuditLog` is ever called (a non-admin gets "Você não tem acesso a esta seção.", not an empty list). Went with (a) over leaving it open to every role because the feature's own reason for existing — LGPD/sigilo-profissional accountability (`postgres-schema-rls`'s framing) — is specifically about who did what to client data, which is exactly the kind of thing a firm would *not* want visible to every secretário/advogado by default; RLS's blanket `SELECT` grant to `authenticated` is a floor (tenant isolation), not a statement that every role should see the tab. This is app-layer only, same caveat `payments`' RBAC comment already carries: RLS still permits any tenant member to read `audit_log` directly (e.g. via a raw REST call), so this doesn't add a second server-side gate — flagged here in case a stricter RLS-level role check is wanted later, same as `payments`' existing gap.
+
+- **Join / null-actor handling**: `audit.repository.ts`'s `listAuditLog` uses a PostgREST embedded-resource select — `"id, action, entity, entity_id, created_at, actor:users(id, name, email)"` — across `audit_log.user_id -> users.id`. No repository in this codebase had an existing embed example to copy (checked `matters.repository.ts`/`deadlines.repository.ts`/`clients.repository.ts`/`tenants.repository.ts` — none use one; the brief's guess that one existed didn't pan out), so this is the first one; documented inline in the repository file. Verified, not assumed: `test/audit.service.test.ts`'s "surfaces a row with a null actor..." test seeds a write as an admin, deletes that admin's auth user (`tenants/test/harness.ts`'s new `deleteAuthUser` helper, added for this), then logs in as a second tenant member and confirms the same log row still comes back via `listAuditLog` with `actor: null` rather than being dropped — i.e. PostgREST embeds a nullable-FK to-one relation as a left join, not an inner join, confirmed against the real local Postgres/PostgREST stack, not just PostgREST's docs.
+
+- Filter (`entidade`/`ação`/date-range) is a plain client-side form driving `ListAuditLogFilter` — `dateFrom`/`dateTo` are local calendar dates converted to a UTC `[start, exclusiveEnd)` window in `audit.repository.ts` (`localDateStartUtcIso`/`exclusiveUpperBound`, duplicated locally rather than imported from `reports.repository.ts`, same self-contained-repository convention `matters.repository.ts`'s `quoteFilterValue` comment already documents). Filter row stays above the list; the list itself is still one `<ul>` of narrative `<li>` lines, never a table.
+
+- **Verification**: `pnpm --filter web exec tsc --noEmit` clean. `eslint` clean on every file touched (`audit.schema/repository/service/controller.ts`, `audit/components/AuditSettings.tsx`, `audit/test/audit.service.test.ts`, `SettingsPage.tsx`, `tenants/test/harness.ts`). New suite `pnpm --filter web exec vitest run src/modules/audit`: 5/5 passing (tenant isolation, insert on all three audited tables with correct actor, update + entity filter + reverse-chronological ordering, null-actor-after-deletion, date-range window). Full `pnpm --filter web exec vitest run`: 101/101 passing across 18 files. `vite build` succeeds (pre-existing >500kB chunk-size warning only, unrelated to this change). Dev server booted on port 5223 and `curl`'d — `/settings` returns 200 (SPA shell), and the new `AuditSettings.tsx` module transforms through Vite with no error in the server log; this is boot-verification only, no browser/screenshot tool available in this environment, so the filter/RBAC-gate/narrative-row rendering itself was verified by reading the component logic and by the integration tests exercising the exact same `listAuditLog` calls the component makes, not by an actual click-through. `dist/` removed after the build check.

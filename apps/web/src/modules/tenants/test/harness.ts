@@ -81,6 +81,20 @@ export async function seedMember(
   return seedUser(tenantId, role);
 }
 
+/**
+ * Deletes a previously-seeded auth user outright, mid-test — distinct from
+ * `cleanupAll` (which runs at teardown for every module's tests). For tests
+ * that need to exercise a live on-delete-cascade while the test is still
+ * running (e.g. `audit_log.user_id`'s `ON DELETE SET NULL` — see
+ * modules/audit/test/audit.service.test.ts), not just tidy up afterward.
+ * `public.users.id` FK's `ON DELETE CASCADE` against `auth.users` means this
+ * also removes the `users` row. Safe to re-pass the same id to `cleanupAll`
+ * afterward — its own `authAdmin.deleteUser` call there is `.catch`-guarded.
+ */
+export async function deleteAuthUser(userId: string): Promise<void> {
+  await authAdmin.deleteUser(userId).catch(() => {});
+}
+
 export async function cleanupAll() {
   for (const id of cleanupAuthUserIds.splice(0)) {
     await authAdmin.deleteUser(id).catch(() => {});
