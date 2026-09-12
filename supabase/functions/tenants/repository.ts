@@ -59,3 +59,34 @@ export async function insertTenantMember(db: Pool, member: NewTenantMember): Pro
     member.email,
   ]);
 }
+
+export interface TargetMember {
+  tenantId: string;
+  role: string;
+}
+
+/** Same direct-Postgres reasoning as fetchCallerMembership — looks up the
+ * *target* of a removal regardless of RLS, so `removeMember` can verify it
+ * belongs to the caller's own tenant before touching it. */
+export async function fetchMemberById(db: Pool, userId: string): Promise<TargetMember | null> {
+  const { rows } = await db.query<{ tenant_id: string; role: string }>(
+    "select tenant_id, role from public.users where id = $1",
+    [userId],
+  );
+  const row = rows[0];
+  return row ? { tenantId: row.tenant_id, role: row.role } : null;
+}
+
+/** Used by the last-admin guardrail — counts admins currently in a tenant. */
+export async function countAdminsInTenant(db: Pool, tenantId: string): Promise<number> {
+  const { rows } = await db.query<{ count: string }>(
+    "select count(*)::text as count from public.users where tenant_id = $1 and role = 'admin'",
+    [tenantId],
+  );
+  return Number(rows[0]?.count ?? 0);
+}
+
+/** Same direct-Postgres reasoning as insertTenantMember — the reverse write. */
+export async function deleteTenantMember(db: Pool, userId: string): Promise<void> {
+  await db.query("delete from public.users where id = $1", [userId]);
+}

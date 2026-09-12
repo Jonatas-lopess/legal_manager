@@ -5,6 +5,7 @@ export {
   requestPasswordResetInputSchema,
   updatePasswordInputSchema,
   inviteUserInputSchema,
+  removeMemberInputSchema,
   invitableRoles,
   userRoles,
 } from "@legal-manager/schema";
@@ -13,6 +14,7 @@ export type {
   RequestPasswordResetInput,
   UpdatePasswordInput,
   InviteUserInput,
+  RemoveMemberInput,
   InvitableRole,
   UserRole,
 } from "@legal-manager/schema";

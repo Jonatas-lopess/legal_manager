@@ -34,6 +34,17 @@ export const inviteUserInputSchema = z.object({
 });
 export type InviteUserInput = z.infer<typeof inviteUserInputSchema>;
 
+// New in ui-shell-clientes-casos-config/04 — Equipe's "Excluir" action.
+// Just the target's id: the caller (and their tenant/role) is always derived
+// server-side from the JWT, same as inviteUserInputSchema never carries a
+// tenant_id either. Reused by both the frontend `tenants` module and the
+// `tenants` Edge Function's `removeMember` action (see that Edge Function's
+// service.ts).
+export const removeMemberInputSchema = z.object({
+  userId: z.string().uuid("ID de usuário inválido"),
+});
+export type RemoveMemberInput = z.infer<typeof removeMemberInputSchema>;
+
 // Mirrors `packages/db/src/schema.ts`'s `clientStatusEnum`.
 export const clientStatuses = ["ativo", "inativo"] as const;
 export type ClientStatus = (typeof clientStatuses)[number];
