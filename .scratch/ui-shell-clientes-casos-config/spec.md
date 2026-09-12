@@ -1,4 +1,4 @@
-Status: done
+Status: ready-for-agent
 
 # Unified app shell + Clientes/Casos/Configurações UI (wireframe parity)
 
@@ -43,6 +43,29 @@ The text brief (bottom of this file) was the input to drawing these frames, not 
 7. **The Prazos card's per-row secondary badge is a tag chip or a fatal marker, not a counting-mode chip** — corrected the original brief's guess. Row 1 (vencido) shows a plain tag chip (`INTERNO`), row 2 (hoje, `is_fatal`) shows `● FATAL`, row 3 (próximos) shows a plain tag chip (`COMUM`) — i.e. the slot shows `● FATAL` when `is_fatal`, otherwise the deadline's own tag if it has one. `dias_uteis`/`dias_corridos` isn't shown anywhere on this card.
 8. **The Prazos card's due-date text varies by bucket** and one variant implies time-of-day (`"Hoje (17:00h)"`) that `deadlines.dueDate` doesn't carry (date only, same "no time component" shape as everywhere else in this app). Render `"Hoje"` without a fabricated time rather than inventing one — same "don't invent data the schema can't back" rule `dashboard-reports` applied to its own payment-date gap.
 9. **The vencido/hoje/próximos grouping this card needs already exists, just in the wrong module.** `reports.service.ts` (function around what the code calls `getPrazosCriticos`) filters deadlines through `dueDateHighlight` (keeps `vencido`/`vence_em_breve`, drops `on_track`) and then re-buckets by comparing `dueDate` to today's local date into vencido/hoje/próximos — this is exactly the grouping `casos-detalhe`'s new card needs, just currently private to `reports`. `dashboard-reports`' own code-review pass already flagged `reports.service.ts` duplicating date-arithmetic that belongs in `deadlines.service.ts` as a follow-up debt — `03` is where that finally gets paid down: extract this bucketing into `deadlines.service.ts` (re-exported via `deadlines.controller.ts`, same precedent `dueDateHighlight` itself already set), parameterize it by an optional `matterId`, and have both `reports.service.ts` and the new card call the shared version instead of `casos-detalhe` importing from `reports` (which would invert this feature's intended read-only aggregate-over-domain-modules dependency direction) or reimplementing it a third time.
+
+### Fidelity check against the running build (2026-09-12)
+
+`01`-`05` all shipped and were marked done, but the user reported the running app didn't look like the wireframes. A pixel-level pass — real `get_screenshot` pulls against all four `18:*` nodes, plus the `4:164` `prazos-agenda` node the user supplied directly (`get_design_context`/`get_screenshot` on it had already been exhausted against this session's Figma Starter-plan monthly quota) — found real drift `01`'s own Comments entry missed (it explicitly says "no drift found" for `PrazosPage.tsx`, but that pass read the wireframe's text description, never re-pulled the actual frame). Screenshots taken with seeded demo data (5 clients/5 matters/4 payments/6 deadlines) so both sides show a populated table, not an empty one — a first pass against near-empty local data was not a fair comparison and is not reflected below.
+
+Two gaps repeat on every screen (shell-level, `01`'s file):
+
+1. **Top bar chrome is incomplete.** No square "L" mark or "SaaS de Gestão Jurídica" subtitle under the wordmark, avatar is a bare initial with no name/role line under it (wireframe shows e.g. "Dr. Marcos Silva / OAB/SP 123.456"), and the notification bell is a text link ("Notificações") instead of an icon.
+2. **Nav links sit in the wrong place.** The wireframe centers "Clientes · Casos · Métricas · Prazos" in the middle of the bar; the build left-aligns them immediately after the logo.
+
+One more repeats everywhere a data table appears (Clientes, Casos, Configurações → Equipe):
+
+3. **Table header row has no shaded band.** The wireframe tints the label row and rules it off from the body; the build's header sits flush white, same as the rows below it.
+
+Per-screen:
+
+4. **Casos (`MattersTable.tsx`) is missing its "AÇÕES" column entirely**, and the wireframe's bare chevron (row-click opens the case, per `03`'s explicit "no separate edit/archive icons here") has been replaced by an Archive-only icon with no header label and no visible way to open a row from that column. This is a real regression, not a fidelity miss in the original build: `03` explicitly spec'd the bare-chevron/whole-row-link shape, and `01`'s 2026-09-12 code-review pass added the Archive button back (correctly — it was fixing a lost soft-delete action) without restoring the chevron or the header it displaced. Clientes is unaffected — it already has its own AÇÕES column (edit + archive icons) exactly per `02`.
+5. **Clientes (`ClientsTable.tsx`) — client name isn't bold.** The wireframe weights the NOME/RAZÃO SOCIAL column against the lighter columns beside it; the build renders it at the same weight as the rest of the row.
+6. **Caso detalhe (`MatterDetailView.tsx`) — header row order is flipped.** The wireframe puts "← Casos / Editar caso" above the page title; the build puts the title first, the back-link/edit row underneath. `03`'s prose listed the title bullet before the back-row bullet, which is likely why it got built in that order — the actual frame pixels (not re-checked until now) show the other order.
+7. **Caso detalhe — payment row actions are styled as bordered buttons**, not the plain text links the wireframe draws for "Estornar"/"Marcar como pago" (copy itself is correct, per `03`, already matching the wireframe's direction-specific labels — this is a style-only gap).
+8. **Prazos (`PrazosPage.tsx`) is the biggest gap — wrong body shape entirely.** The wireframe's agenda body is **one table**: a shaded header row (CASO/MATTER, DATA FATAL, SITUAÇÃO, RELEVÂNCIA) with vencido/hoje/próximos as in-table group rows (accent bar + label), each matter's row spanning the full table width. The build renders three separate boxed cards side by side instead, each its own ~330px-wide mini-table — narrow enough that "cliente — item de catálogo" wraps 3 lines while the due-date/status/fatal badges get squeezed onto the same cramped line. Same page is also missing: the page subtitle ("Acompanhamento de obrigações processuais urgentes"), the "Filtrado por: Próximos 5 dias ou já vencidos" chip (top-right), and the headline card's body sentence ("Existem N prazos processuais que expiram em até 5 dias úteis ou que já superaram a data fatal de entrega" — build shows only the bare "Prazos Críticos" label). "Ver todos os prazos catalogados" is a centered bordered button below the table in the wireframe; the build renders it as a plain text link in the page header, top-right. Row content itself (matter, descrição, due date, situação, is_fatal) is all present and correct per `03`'s spec for the matter-scoped card this page's grouping logic shares — this is purely a layout/copy gap, no new data needed.
+
+Tickets `06`-`11` (below) fix all eight; `06`/`07` are the two/one shell-level fixes every other ticket in this batch builds on.
 
 ## Solution
 
@@ -91,6 +114,7 @@ Carried, not newly invented:
 
 ## Further Notes
 
+- **2026-09-12**: user-reported "app doesn't look like the wireframes" triggered a real pixel-diff pass (see "Fidelity check against the running build" above) — 8 gaps found across the shell and all 5 wireframed screens (`clientes-lista`/`casos-lista`/`casos-detalhe`/`configuracoes`/`prazos-agenda`). Tickets `06`-`11` fix them; this feature's `Status:` reopens to `ready-for-agent` until those land, then flips back to `done`.
 - Depends on: `dashboard-reports` (done — this feature reuses its shell precedent and both existing frames), `clients-catalog-matters-crud` (done), `deadlines-engine-alerts` (done), `postgres-schema-rls` (done — `audit_log` table/RLS/triggers already shipped).
 - Node ids for all four frames are filled in above (pulled via `get_metadata` 2026-09-11). `get_design_context` per-frame (screenshot + reference code) hasn't been pulled yet — do that during `02`/`03`/`04` implementation rather than working from this file's structural dump alone.
 - Original text brief handed to the wireframe tool (2026-09-11), preserved verbatim for traceability against what actually got drawn:
