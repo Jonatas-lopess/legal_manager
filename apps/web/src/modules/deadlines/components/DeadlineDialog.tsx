@@ -25,9 +25,9 @@ function matterLabel(matter: Matter): string {
   return `${matter.uf} — ${matter.description ?? matter.id.slice(0, 8)}`;
 }
 
-function toFormValues(deadline: Deadline | null): FormInput {
+function toFormValues(deadline: Deadline | null, initialMatterId?: string): FormInput {
   return {
-    matterId: deadline?.matterId ?? "",
+    matterId: deadline?.matterId ?? initialMatterId ?? "",
     countingMode: deadline?.countingMode ?? "dias_uteis",
     days: deadline?.days ?? 1,
     isFatal: deadline?.isFatal ?? false,
@@ -42,12 +42,26 @@ interface DeadlineDialogProps {
   mode: "create" | "edit";
   deadline: Deadline | null;
   onSaved: (deadline: Deadline) => void;
+  /** Pre-fills the matter picker for a create opened from a matter-scoped
+   * context (casos-detalhe's Prazos card) — reuses this same dialog/field
+   * set rather than a standalone rebuild (ticket 03). Ignored in edit mode
+   * (the deadline's own `matterId` wins) and still just pre-fills the
+   * `<select>`, which stays changeable like every other field here. */
+  initialMatterId?: string;
 }
 
-export function DeadlineDialog({ open, onOpenChange, mode, deadline, onSaved }: DeadlineDialogProps) {
+export function DeadlineDialog({ open, onOpenChange, mode, deadline, onSaved, initialMatterId }: DeadlineDialogProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      {open && <DeadlineDialogContent mode={mode} deadline={deadline} onSaved={onSaved} onOpenChange={onOpenChange} />}
+      {open && (
+        <DeadlineDialogContent
+          mode={mode}
+          deadline={deadline}
+          onSaved={onSaved}
+          onOpenChange={onOpenChange}
+          initialMatterId={initialMatterId}
+        />
+      )}
     </Dialog.Root>
   );
 }
@@ -57,11 +71,13 @@ function DeadlineDialogContent({
   deadline,
   onSaved,
   onOpenChange,
+  initialMatterId,
 }: {
   mode: "create" | "edit";
   deadline: Deadline | null;
   onSaved: (deadline: Deadline) => void;
   onOpenChange: (open: boolean) => void;
+  initialMatterId?: string;
 }) {
   const [formError, setFormError] = React.useState<string | null>(null);
   // Story 3: the computed due_date, surfaced right in the dialog once a
@@ -83,7 +99,7 @@ function DeadlineDialogContent({
     formState: { errors, isSubmitting, dirtyFields },
   } = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(createDeadlineInputSchema),
-    defaultValues: toFormValues(deadline),
+    defaultValues: toFormValues(deadline, initialMatterId),
   });
 
   const onSubmit: SubmitHandler<FormOutput> = async (data) => {

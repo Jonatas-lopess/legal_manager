@@ -8,6 +8,7 @@ export interface Payment {
   matterId: string;
   value: number;
   status: PaymentStatus;
+  description: string | null;
   createdAt: string;
   updatedAt: string;
 }

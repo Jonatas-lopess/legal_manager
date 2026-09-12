@@ -117,6 +117,9 @@ export const createMatterInputSchema = z.object({
   comarca: optionalText(),
   municipio: optionalText(),
   description: optionalText(),
+  // CNJ process number — free text (see packages/db/src/schema.ts's
+  // numeroCnj comment: no format/check-digit validation in this MVP).
+  numeroCnj: optionalText(),
 });
 export type CreateMatterInput = z.input<typeof createMatterInputSchema>;
 
@@ -178,6 +181,10 @@ export const createPaymentInputSchema = z.object({
   matterId: z.string().trim().regex(matterIdRegex, "ID de processo inválido"),
   value: z.coerce.number().positive("Valor deve ser maior que zero"),
   status: z.enum(paymentStatuses).default("pendente"),
+  // Free-text label only — no parcela-number/total columns, no split logic
+  // (PLANNING §4's "sem split" stays intact, see packages/db/src/schema.ts's
+  // description comment on the `payments` table).
+  description: optionalText(),
 });
 export type CreatePaymentInput = z.input<typeof createPaymentInputSchema>;
 

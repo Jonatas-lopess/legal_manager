@@ -134,6 +134,13 @@ export const matters = pgTable(
     comarca: text("comarca"),
     municipio: text("municipio"),
     description: text("description"),
+    // CNJ process number (e.g. "1002345-67.2024.5.02.0000") — free text, no
+    // format check: casos-detalhe's "Dados do processo" card draws it
+    // (ui-shell-clientes-casos-config/03's fidelity check point 1) but
+    // nothing in this MVP validates/parses CNJ's own check-digit format, so
+    // this stays a plain nullable column rather than a `check()`-constrained
+    // one, matching this table's other free-text fields (comarca/municipio).
+    numeroCnj: text("numero_cnj"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     retentionUntil: timestamp("retention_until", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -391,6 +398,12 @@ export const payments = pgTable(
     matterId: uuid("matter_id").notNull(),
     value: numeric("value", { precision: 12, scale: 2 }).notNull(),
     status: paymentStatusEnum("status").notNull().default("pendente"),
+    // Free-text label only (e.g. "Parcela 1/3 - Honorários Iniciais") — no
+    // parcela-number/total columns, no split logic (PLANNING §4's "sem
+    // split" stays intact, ui-shell-clientes-casos-config/03's fidelity
+    // check point 2). Nullable: existing rows and any create that skips it
+    // are still valid.
+    description: text("description"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

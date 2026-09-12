@@ -30,6 +30,7 @@ function toFormValues(matter: Matter | null): FormInput {
     comarca: matter?.comarca ?? "",
     municipio: matter?.municipio ?? "",
     description: matter?.description ?? "",
+    numeroCnj: matter?.numeroCnj ?? "",
   };
 }
 
@@ -195,6 +196,11 @@ function MatterDialogContent({
           <div className="flex flex-col gap-2">
             <Label htmlFor="matter-municipio">Município</Label>
             <Input id="matter-municipio" {...register("municipio")} />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="matter-numero-cnj">Número CNJ</Label>
+            <Input id="matter-numero-cnj" placeholder="0000000-00.0000.0.00.0000" {...register("numeroCnj")} />
           </div>
 
           <div className="flex flex-col gap-2 sm:col-span-2">

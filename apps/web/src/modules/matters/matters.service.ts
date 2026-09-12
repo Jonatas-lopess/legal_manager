@@ -14,6 +14,7 @@ function toMatter(row: MatterRow): Matter {
     comarca: row.comarca,
     municipio: row.municipio,
     description: row.description,
+    numeroCnj: row.numero_cnj,
     deletedAt: row.deleted_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

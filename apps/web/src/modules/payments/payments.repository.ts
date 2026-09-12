@@ -14,11 +14,12 @@ interface PaymentRow {
   // rather than trusting that here.
   value: number | string;
   status: string;
+  description: string | null;
   created_at: string;
   updated_at: string;
 }
 
-const SELECT_COLUMNS = "id, matter_id, value, status, created_at, updated_at";
+const SELECT_COLUMNS = "id, matter_id, value, status, description, created_at, updated_at";
 
 /** Insert carries `tenant_id` explicitly — RLS's `with check` compares it
  * against `current_tenant_id()` but PostgREST never fills it in for us.
@@ -34,6 +35,7 @@ export async function insertPayment(tenantId: string, input: ParsedCreatePayment
       matter_id: input.matterId,
       value: input.value,
       status: input.status,
+      description: input.description,
     })
     .select(SELECT_COLUMNS)
     .single<PaymentRow>();
