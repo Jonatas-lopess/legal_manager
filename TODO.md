@@ -61,14 +61,14 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
 
 ## ui-shell-clientes-casos-config
 
-- Status: `ready-for-agent`
+- Status: `done`
 - Spec: `.scratch/ui-shell-clientes-casos-config/spec.md`
 - Issues:
   - `01-unified-app-shell.md` — done
   - `02-clientes-page.md` — done
   - `03-casos-page-and-prazos-card.md` — done
   - `04-configuracoes-equipe-catalogo-tags.md` — done
-  - `05-configuracoes-auditoria.md` — ready-for-agent
+  - `05-configuracoes-auditoria.md` — done
 - Wireframe node ids filled in (2026-09-11) — fidelity check against the real frames found real gaps (matters.numero_cnj, payments.description, team member removal, Configurações' Catálogo/Tags/Auditoria are compact not tabular); see spec.md's "Fidelity check against the drawn frames".
 - Depends on: `postgres-schema-rls`, `tenants-auth-invite`, `clients-catalog-matters-crud`, `deadlines-engine-alerts`, `dashboard-reports`
 
