@@ -7,8 +7,12 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Back-link/edit-button row renders above the page title
-- [ ] "Estornar"/"Marcar como pago" render as text links, not bordered buttons — same click behavior, unchanged copy
-- [ ] `tsc --noEmit` clean, `MatterDetailView.tsx`/`PaymentPanel.tsx` tests still pass
+- [x] Back-link/edit-button row renders above the page title
+- [x] "Estornar"/"Marcar como pago" render as text links, not bordered buttons — same click behavior, unchanged copy
+- [x] `tsc --noEmit` clean, `MatterDetailView.tsx`/`PaymentPanel.tsx` tests still pass (no dedicated component tests exist; full suite passes)
+
+## Comments
+
+- 2026-09-12: "Text link" style matched to `MatterPrazosCard.tsx`'s existing "Marcar cumprido" treatment — `variant="ghost"` (no border), not a literal `<a>`/`variant="link"` — same visual family the ticket names as the precedent.

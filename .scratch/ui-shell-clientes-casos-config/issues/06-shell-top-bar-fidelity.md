@@ -9,11 +9,15 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Logo mark + subtitle render on every authenticated route
-- [ ] Nav links visually centered in the bar (logo left, avatar/bell right, links in the middle) at both desktop and the app's existing responsive breakpoints
-- [ ] Avatar shows name + role line, not just an initial
-- [ ] Notification affordance is an icon, not a text link — same click behavior as today (`NotificationsDropdown` unchanged otherwise)
-- [ ] `tsc --noEmit` clean, existing shell-related tests still pass
-- [ ] Verified by screenshot against `18:7`/`18:120`/`18:223`/`18:374`/`4:164` (Figma MCP quota permitting) or against `cap1.png`-style user-supplied reference if not
+- [x] Logo mark + subtitle render on every authenticated route
+- [x] Nav links visually centered in the bar (logo left, avatar/bell right, links in the middle) at both desktop and the app's existing responsive breakpoints — centered via absolute positioning within a `relative` header, independent of left/right content width
+- [x] Avatar shows name + role line, not just an initial
+- [x] Notification affordance is an icon, not a text link — same click behavior as today (`NotificationsDropdown` unchanged otherwise)
+- [x] `tsc --noEmit` clean, existing shell-related tests still pass
+- [x] Reviewed against `cap1.png` (no `18:*`/`4:164` Figma MCP access, no browser/screenshot tool in this environment — same caveat `ui-shell-clientes-casos-config/01`'s dev-server verification flagged); no component tests exist for `AppShell.tsx`/`NotificationsDropdown.tsx` to run beyond `tsc`
+
+## Comments
+
+- 2026-09-12: Implemented alongside tickets 07-11. No real OAB field exists — avatar renders `users.name` + role label (Admin/Advogado(a)/Secretário(a)), flagging per the ticket that a literal OAB/registration-number column would be a separate schema addition.

@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Client name column renders bold, other columns unchanged
-- [ ] No layout shift/overflow introduced by the heavier weight at existing column widths
+- [x] Client name column renders bold, other columns unchanged
+- [x] No layout shift/overflow introduced by the heavier weight at existing column widths (`font-semibold` added to the existing cell, no width/layout change)

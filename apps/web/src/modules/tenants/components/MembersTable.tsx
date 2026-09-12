@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
+import { TABLE_HEADER_ROW_CLASS } from "@/components/ui/table";
 import { listMembers, removeMember, type Member } from "../tenants.controller";
 import { InviteUserDialog } from "./InviteUserDialog";
 import { useAuth } from "./AuthProvider";
@@ -95,7 +96,7 @@ export function MembersTable() {
       </div>
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b text-left text-muted-foreground">
+          <tr className={TABLE_HEADER_ROW_CLASS}>
             <th className="py-2 font-medium uppercase">Nome do profissional</th>
             <th className="py-2 font-medium uppercase">E-mail de acesso</th>
             <th className="py-2 font-medium uppercase">Função</th>

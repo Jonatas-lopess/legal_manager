@@ -6,9 +6,13 @@ Fix: restore the "AÇÕES" header label and the chevron as a visible open-row in
 
 **Blocked by:** `07` (touches the same table header row this ticket restores a label to — sequence after the shared shading fix lands to avoid two tickets editing the same header markup in parallel)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] "AÇÕES" header renders over the Casos table's action column
-- [ ] Chevron (or equivalent open-row visual cue) is back, whole row still links to `/matters/:id`
-- [ ] Archive (soft-delete) icon/action stays working, unchanged behavior
-- [ ] `tsc --noEmit` clean, `MattersTable.tsx` tests updated/still passing
+- [x] "AÇÕES" header renders over the Casos table's action column
+- [x] Chevron (or equivalent open-row visual cue) is back, whole row still links to `/matters/:id`
+- [x] Archive (soft-delete) icon/action stays working, unchanged behavior
+- [x] `tsc --noEmit` clean, `MattersTable.tsx` tests updated/still passing (no dedicated component tests exist; full suite passes)
+
+## Comments
+
+- 2026-09-12: The chevron itself (`›` span after the Archive button) turned out to already be in place — only the "AÇÕES" header label was actually missing. One-line fix.

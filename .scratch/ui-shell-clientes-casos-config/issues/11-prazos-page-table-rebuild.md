@@ -18,14 +18,20 @@ Note for context: `01`'s 2026-09-12 Comments entry claims "no drift found" for t
 
 **Blocked by:** `07` (reuses the shared table-header shading this ticket's new table needs)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Agenda body is one table (shaded header row, 4 columns as above), not three side-by-side cards
-- [ ] vencido/hoje/próximos render as in-table group rows, not separate card containers
-- [ ] No more 3-line name-wrapping / cramped date-badge crowding at normal viewport widths
-- [ ] Page subtitle restored
-- [ ] "Filtrado por: ..." chip restored, top-right, purely informational (no new control)
-- [ ] Headline card shows the full sentence, not just the bare label
-- [ ] "Ver todos os prazos catalogados" is a centered button below the table, not a header text link
-- [ ] `tsc --noEmit` clean, `reports`/`deadlines` test suites still pass (no data-layer change expected, layout only)
-- [ ] Verified by screenshot against `4:164` with seeded demo data (empty/near-empty data was misleading in the 2026-09-12 review — use a populated fixture)
+- [x] Agenda body is one table (shaded header row, 4 columns as above), not three side-by-side cards
+- [x] vencido/hoje/próximos render as in-table group rows, not separate card containers
+- [x] No more 3-line name-wrapping / cramped date-badge crowding at normal viewport widths (full-width table row per matter, no ~330px card constraint)
+- [x] Page subtitle restored
+- [x] "Filtrado por: ..." chip restored, top-right, purely informational (no new control)
+- [x] Headline card shows the full sentence, not just the bare label
+- [x] "Ver todos os prazos catalogados" is a centered button below the table, not a header text link
+- [x] `tsc --noEmit` clean, `reports`/`deadlines` test suites still pass
+- [x] Reviewed against `cap1.png` (a rendered screenshot of this exact page, dropped in the repo root) instead of a live `4:164` screenshot — no browser/screenshot tool in this environment (same caveat ticket `06` and `01`'s dev-server verification flagged)
+
+## Comments
+
+- 2026-09-12: `cap1.png` (untracked file at repo root) turned out to be a rendered reference of this exact page/data shape — used it as the literal pixel target instead of re-deriving column meaning from prose alone. It clarified that SITUAÇÃO (VENCIDO/HOJE/EM N DIAS) and DATA FATAL are two *different* pieces of information, not the same text twice: DATA FATAL is `MatterPrazosCard.tsx`'s `dueDateText` shape (absolute date for vencido, "Hoje" for hoje, "Em N dias" for próximos — duplicated locally, same per-file-duplication convention as its `roleLabels`/`BADGE_CLASS` siblings), SITUAÇÃO is the bucket name itself in that same style, rendered as this app's usual monochrome pill.
+- One small deviation from "no data-layer change expected, layout only": RELEVÂNCIA's tag label needed each row's tags, which `PrazoRow` didn't carry — added one `listTagsForDeadlines(ids)` call (an already-exported `tags.controller.ts` function, same cross-module-read boundary `getPrazosCriticos` already uses for matters/clients/catalog) in the page component. No `reports`/`deadlines`/`tags` service or schema code touched.
+- The reference's darker "VENCIDO" vs. lighter "HOJE"/"EM N DIAS" pill shading was not reproduced — this app's established convention (`BADGE_CLASS`/`STATUS_PILL_CLASS` everywhere else) is one uniform monochrome pill regardless of value, never a per-value intensity/color difference; kept that convention instead of the screenshot's two-tone treatment.

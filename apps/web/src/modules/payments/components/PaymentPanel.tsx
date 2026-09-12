@@ -135,7 +135,7 @@ export function PaymentPanel({ matterId }: PaymentPanelProps) {
                   <span className={STATUS_PILL_CLASS}>{statusLabels[payment.status]}</span>
                 </td>
                 <td className="p-2 text-right">
-                  <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => handleToggle(payment.id)}>
+                  <Button type="button" size="sm" variant="ghost" disabled={busy} onClick={() => handleToggle(payment.id)}>
                     {payment.status === "pago" ? "Estornar" : "Marcar como pago"}
                   </Button>
                 </td>

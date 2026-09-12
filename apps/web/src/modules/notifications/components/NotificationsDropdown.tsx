@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { listMyNotifications, markNotificationRead, type Notification } from "../notifications.controller";
 
@@ -51,16 +52,17 @@ export function NotificationsDropdown() {
     <div className="relative">
       <Button
         variant="ghost"
-        size="sm"
+        size="icon"
+        className="relative"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-label="Notificações"
         data-testid="notifications-toggle"
       >
-        Notificações
+        <Bell className="h-4 w-4" />
         {unreadCount > 0 && (
           <span
-            className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white"
+            className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white"
             aria-label={`${unreadCount} não lidas`}
           >
             {unreadCount}

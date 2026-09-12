@@ -61,7 +61,7 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
 
 ## ui-shell-clientes-casos-config
 
-- Status: `ready-for-agent` (reopened 2026-09-12 — see below)
+- Status: `done`
 - Spec: `.scratch/ui-shell-clientes-casos-config/spec.md`
 - Issues:
   - `01-unified-app-shell.md` — done
@@ -69,15 +69,16 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
   - `03-casos-page-and-prazos-card.md` — done
   - `04-configuracoes-equipe-catalogo-tags.md` — done
   - `05-configuracoes-auditoria.md` — done
-  - `06-shell-top-bar-fidelity.md` — ready-for-agent
-  - `07-table-header-shading.md` — ready-for-agent
-  - `08-casos-acoes-column.md` — ready-for-agent (blocked by `07`)
-  - `09-clientes-name-weight.md` — ready-for-agent
-  - `10-caso-detalhe-header-and-payment-actions.md` — ready-for-agent
-  - `11-prazos-page-table-rebuild.md` — ready-for-agent (blocked by `07`)
+  - `06-shell-top-bar-fidelity.md` — done
+  - `07-table-header-shading.md` — done
+  - `08-casos-acoes-column.md` — done
+  - `09-clientes-name-weight.md` — done
+  - `10-caso-detalhe-header-and-payment-actions.md` — done
+  - `11-prazos-page-table-rebuild.md` — done
 - Wireframe node ids filled in (2026-09-11) — fidelity check against the real frames found real gaps (matters.numero_cnj, payments.description, team member removal, Configurações' Catálogo/Tags/Auditoria are compact not tabular); see spec.md's "Fidelity check against the drawn frames".
 - See `01-unified-app-shell.md` Comments for the 2026-09-12 code-review pass over tickets 01-04 (9 of 10 findings fixed, including a last-admin-removal race closed with a transactional row lock — an earlier DB-trigger attempt was reverted, see Comments; the 10th finding — past commits' message format — flagged, not rewritten).
 - **2026-09-12**: user reported the running app didn't match the wireframes; a real pixel-diff pass (screenshots vs. all 5 `18:*`/`4:164` frames, populated fixture data) found 8 gaps across the shell and every screen, including one outright regression (Casos lost its AÇÕES column/chevron when `01`'s code-review pass added an Archive button) and one page (Prazos) built as 3 cards instead of the wireframe's 1 table. See spec.md's "Fidelity check against the running build" for the full list; `06`-`11` fix it.
+- **2026-09-12**: tickets `06`-`11` implemented and closed. No Figma MCP/browser-screenshot tool available in this environment — verified against `cap1.png` (a rendered reference of the Prazos page dropped in the repo root) plus `tsc --noEmit`/`vitest run` (18 files, 101 tests, all passing); see each ticket's Comments for specifics.
 - Depends on: `postgres-schema-rls`, `tenants-auth-invite`, `clients-catalog-matters-crud`, `deadlines-engine-alerts`, `dashboard-reports`
 
 ## deploy-pipeline

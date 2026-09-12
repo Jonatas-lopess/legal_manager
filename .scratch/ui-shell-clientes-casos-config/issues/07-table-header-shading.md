@@ -6,9 +6,13 @@ Text case/labels are already correct (uppercase via CSS class per `02`'s precede
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Clientes, Casos, and Configurações → Equipe table headers all show the shaded band + rule
-- [ ] Fixed at the shared level (one change, not three copy-pasted tweaks) if a shared table pattern exists; if these three tables don't actually share one today, note that and fix each, flagging the duplication for a follow-up
-- [ ] No visual regression to header text case, column widths, or sort/filter controls already in these headers
-- [ ] `tsc --noEmit` clean, existing table component tests still pass
+- [x] Clientes, Casos, and Configurações → Equipe table headers all show the shaded band + rule
+- [x] Fixed at the shared level: no shared table component existed (each table hand-rolled its own `<thead>`), so added `TABLE_HEADER_ROW_CLASS` in new `components/ui/table.ts` and imported it into all three — one class definition, not three copy-pasted tweaks
+- [x] No visual regression to header text case, column widths, or sort/filter controls already in these headers
+- [x] `tsc --noEmit` clean, existing table component tests still pass (no dedicated component tests exist for these three tables; full `vitest run` — 101/101 — still passes)
+
+## Comments
+
+- 2026-09-12: `bg-muted/50` used for the tint (same token `Skeleton`/`MetricasPage.tsx`'s progress-bar background already use for a subtle fill), `border-b` kept for the rule.

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TABLE_HEADER_ROW_CLASS } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { listClients, softDeleteClient, clientStatuses, type Client, type ClientStatus } from "../clients.controller";
 import { ClientDialog } from "./ClientDialog";
@@ -102,7 +103,7 @@ export function ClientsTable() {
         <CardContent className="p-0">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-left text-muted-foreground">
+              <tr className={TABLE_HEADER_ROW_CLASS}>
                 <th className="p-3 font-medium uppercase">Nome / Razão social</th>
                 <th className="p-3 font-medium uppercase">CPF/CNPJ</th>
                 <th className="p-3 font-medium uppercase">Telefone</th>
@@ -147,7 +148,7 @@ export function ClientsTable() {
                       key={client.id}
                       className={cn("border-b last:border-0", muted && "text-muted-foreground opacity-70")}
                     >
-                      <td className="p-3">{client.name}</td>
+                      <td className="p-3 font-semibold">{client.name}</td>
                       <td className="p-3">{client.cpf || client.cnpj || "—"}</td>
                       <td className="p-3">{client.phone || "—"}</td>
                       <td className="p-3">{client.email || "—"}</td>

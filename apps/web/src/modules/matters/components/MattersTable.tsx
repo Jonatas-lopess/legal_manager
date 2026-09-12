@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TABLE_HEADER_ROW_CLASS } from "@/components/ui/table";
 import { listMatters, softDeleteMatter, matterStatuses, type Matter, type MatterStatus } from "../matters.controller";
 import { listClients, type Client } from "../../clients/clients.controller";
 import { listCatalogItems, type CatalogItem } from "../../catalog/catalog.controller";
@@ -162,12 +163,12 @@ export function MattersTable() {
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-left text-muted-foreground">
+                <tr className={TABLE_HEADER_ROW_CLASS}>
                   <th className="p-3 font-medium">Cliente</th>
                   <th className="p-3 font-medium">Item de catálogo / Processo</th>
                   <th className="p-3 font-medium">UF / Comarca / Município</th>
                   <th className="p-3 font-medium">Status</th>
-                  <th className="p-3" />
+                  <th className="p-3 text-right font-medium uppercase">Ações</th>
                 </tr>
               </thead>
               <tbody>

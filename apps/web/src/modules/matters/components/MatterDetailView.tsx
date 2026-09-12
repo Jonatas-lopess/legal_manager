@@ -80,8 +80,6 @@ export function MatterDetailView() {
         </Card>
       )}
 
-      <h1 className="text-xl font-semibold">{pageTitle}</h1>
-
       <div className="flex items-center justify-between gap-2">
         <Button variant="ghost" size="sm" onClick={() => navigate("/matters")}>
           ← Casos
@@ -90,6 +88,8 @@ export function MatterDetailView() {
           Editar caso
         </Button>
       </div>
+
+      <h1 className="text-xl font-semibold">{pageTitle}</h1>
 
       {/* Dados do processo */}
       <Card>
