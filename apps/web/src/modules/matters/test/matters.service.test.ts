@@ -122,6 +122,26 @@ describe("matters.service — CRUD + rascunho lifecycle + tenant isolation", () 
     });
   });
 
+  it("numeroCnj is nullable, settable on create, and editable afterward (ticket 03 addition)", async () => {
+    await loginAsNewAdmin();
+
+    const created = await controller.createMatter({ uf: "SP" });
+    expect(created.numeroCnj).toBeNull();
+
+    const createdWithCnj = await controller.createMatter({ uf: "SP", numeroCnj: "1002345-67.2024.5.02.0000" });
+    expect(createdWithCnj.numeroCnj).toBe("1002345-67.2024.5.02.0000");
+
+    const edited = await controller.updateMatter(created.id, { numeroCnj: "0000001-23.2026.8.26.0100" });
+    expect(edited.numeroCnj).toBe("0000001-23.2026.8.26.0100");
+
+    // Column-level UPDATE grant regression guard (Trap 2 of this ticket):
+    // a column left off matters_update_own_tenant's grant list is silently
+    // un-updatable by `authenticated` even though the RLS policy allows the
+    // row — this would fail/no-op here if numero_cnj weren't added to it.
+    const cleared = await controller.updateMatter(created.id, { numeroCnj: null });
+    expect(cleared.numeroCnj).toBeNull();
+  });
+
   it("concluido/arquivado are settable with no extra gate beyond client+catalog set", async () => {
     await loginAsNewAdmin();
     const { client, catalogItem } = await seedClientAndCatalogItem();

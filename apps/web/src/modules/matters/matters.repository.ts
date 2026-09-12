@@ -18,13 +18,14 @@ interface MatterRow {
   comarca: string | null;
   municipio: string | null;
   description: string | null;
+  numero_cnj: string | null;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
 }
 
 const SELECT_COLUMNS =
-  "id, client_id, matter_catalog_item_id, status, uf, comarca, municipio, description, deleted_at, created_at, updated_at";
+  "id, client_id, matter_catalog_item_id, status, uf, comarca, municipio, description, numero_cnj, deleted_at, created_at, updated_at";
 
 export async function insertMatter(tenantId: string, input: ParsedCreateMatter) {
   return supabase
@@ -38,6 +39,7 @@ export async function insertMatter(tenantId: string, input: ParsedCreateMatter) 
       comarca: input.comarca,
       municipio: input.municipio,
       description: input.description,
+      numero_cnj: input.numeroCnj,
     })
     .select(SELECT_COLUMNS)
     .single<MatterRow>();
@@ -55,6 +57,7 @@ export async function updateMatter(id: string, input: ParsedMatterPatch) {
   if (input.comarca !== undefined) patch.comarca = input.comarca;
   if (input.municipio !== undefined) patch.municipio = input.municipio;
   if (input.description !== undefined) patch.description = input.description;
+  if (input.numeroCnj !== undefined) patch.numero_cnj = input.numeroCnj;
 
   return supabase.from("matters").update(patch).eq("id", id).select(SELECT_COLUMNS).single<MatterRow>();
 }

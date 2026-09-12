@@ -296,3 +296,60 @@ export function dueDateHighlight(dueDate: string, status: DeadlineStatus): DueDa
   if (dueDate <= addLocalCalendarDays(today, 5)) return "vence_em_breve";
   return "on_track";
 }
+
+// --- Vencido/hoje/próximos bucketing — moved here (ui-shell-clientes-casos-
+// config/03, spec.md fidelity check point 9) from reports.service.ts's
+// getPrazosCriticos, which had this exact grouping private to itself
+// (dashboard-reports' own code-review flagged that as duplicated date-
+// arithmetic that belonged in this module). Callers: reports.service.ts's
+// getPrazosCriticos (no matterId — every pendente deadline in the tenant)
+// and casos-detalhe's new matter-scoped Prazos card (matterId set). Kept as
+// one shared function rather than reimplemented a third time.
+
+export interface PrazoBucketDeadline extends Deadline {
+  /** Always "vencido" or "vence_em_breve" — on_track rows are filtered out
+   * before bucketing (see below), so this union member is unreachable here,
+   * but kept as DueDateHighlight (not a 2-value subtype) so callers can pass
+   * it straight through without a cast. */
+  highlight: DueDateHighlight;
+}
+
+export interface PrazoBuckets {
+  count: number;
+  groups: {
+    vencido: PrazoBucketDeadline[];
+    hoje: PrazoBucketDeadline[];
+    proximos: PrazoBucketDeadline[];
+  };
+}
+
+/**
+ * Headline count + vencido/hoje/próximos grouping shared by reports'
+ * Prazos-críticos aggregate and the matter-scoped Prazos card. Pulls every
+ * `pendente` deadline (optionally scoped to a single matter via `matterId`
+ * — `listDeadlines`'s existing `ListDeadlinesFilter.matterId`, no new query),
+ * keeps only the ones `dueDateHighlight` doesn't call "on_track" (folds
+ * "already overdue" and "due within 5 dias" into vencido/vence_em_breve),
+ * then splits that filtered set by a plain local-date-string comparison
+ * against today — same today/comparison rail as `dueDateHighlight` itself
+ * (not computeDueDate's UTC business-day precision).
+ */
+export async function getPrazoBuckets(matterId?: string): Promise<PrazoBuckets> {
+  const deadlines = await listDeadlines({ status: "pendente", matterId });
+  const today = todayLocalIso();
+  const groups: PrazoBuckets["groups"] = { vencido: [], hoje: [], proximos: [] };
+  let count = 0;
+
+  for (const deadline of deadlines) {
+    const highlight = dueDateHighlight(deadline.dueDate, deadline.status);
+    if (highlight === "on_track") continue;
+
+    count++;
+    const row: PrazoBucketDeadline = { ...deadline, highlight };
+    if (deadline.dueDate < today) groups.vencido.push(row);
+    else if (deadline.dueDate === today) groups.hoje.push(row);
+    else groups.proximos.push(row);
+  }
+
+  return { count, groups };
+}

@@ -10,6 +10,7 @@ function toPayment(row: PaymentRow): Payment {
     matterId: row.matter_id,
     value: Number(row.value),
     status: row.status as PaymentStatus,
+    description: row.description,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

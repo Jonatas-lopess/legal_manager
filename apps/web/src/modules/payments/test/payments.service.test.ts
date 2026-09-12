@@ -46,7 +46,7 @@ describe("payments.service — create/list/toggle, matter-scoped, tenant-isolate
     const matterB = await createDraftMatter();
 
     const created = await controller.createPayment({ matterId: matterA.id, value: 1500.5 });
-    expect(created).toMatchObject({ matterId: matterA.id, value: 1500.5, status: "pendente" });
+    expect(created).toMatchObject({ matterId: matterA.id, value: 1500.5, status: "pendente", description: null });
 
     const listedA = await controller.listPaymentsForMatter(matterA.id);
     expect(listedA.map((p) => p.id)).toContain(created.id);
@@ -54,6 +54,24 @@ describe("payments.service — create/list/toggle, matter-scoped, tenant-isolate
     // A payment created under matter A must not leak into matter B's list.
     const listedB = await controller.listPaymentsForMatter(matterB.id);
     expect(listedB.map((p) => p.id)).not.toContain(created.id);
+  });
+
+  it("description is nullable free text, set on create (ticket 03 addition — no parcela-number/split logic)", async () => {
+    await loginAsNewAdmin();
+    const matter = await createDraftMatter();
+
+    const withoutDescription = await controller.createPayment({ matterId: matter.id, value: 100 });
+    expect(withoutDescription.description).toBeNull();
+
+    const withDescription = await controller.createPayment({
+      matterId: matter.id,
+      value: 250,
+      description: "Parcela 1/3 - Honorários Iniciais",
+    });
+    expect(withDescription.description).toBe("Parcela 1/3 - Honorários Iniciais");
+
+    const listed = await controller.listPaymentsForMatter(matter.id);
+    expect(listed.find((p) => p.id === withDescription.id)?.description).toBe("Parcela 1/3 - Honorários Iniciais");
   });
 
   it("admin/advogado can toggle a payment's status pago<->pendente", async () => {

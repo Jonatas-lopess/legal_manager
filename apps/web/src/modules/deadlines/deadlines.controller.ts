@@ -9,6 +9,7 @@ export {
   getDeadline,
   listDeadlines,
   dueDateHighlight,
+  getPrazoBuckets,
 } from "./deadlines.service";
 export { countingModes, deadlineStatuses } from "./deadlines.schema";
 export type {
@@ -19,4 +20,4 @@ export type {
   UpdateDeadlineInput,
   ListDeadlinesFilter,
 } from "./deadlines.schema";
-export type { DueDateHighlight } from "./deadlines.service";
+export type { DueDateHighlight, PrazoBucketDeadline, PrazoBuckets } from "./deadlines.service";

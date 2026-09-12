@@ -12,6 +12,7 @@ export interface Matter {
   comarca: string | null;
   municipio: string | null;
   description: string | null;
+  numeroCnj: string | null;
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;

@@ -6,7 +6,7 @@ import type { MatterStatus, Matter } from "../matters/matters.controller";
 import * as catalogController from "../catalog/catalog.controller";
 import { listClients } from "../clients/clients.controller";
 import type { Client } from "../clients/clients.controller";
-import { listDeadlines, dueDateHighlight } from "../deadlines/deadlines.controller";
+import { getPrazoBuckets, type PrazoBucketDeadline } from "../deadlines/deadlines.controller";
 
 // --- Período-range resolution — a pure function of "today" (spec's Testing
 // Decisions: unit-test with fake timers, exact-date-literal assertions, no
@@ -247,16 +247,18 @@ export async function getVolumePorCatalogo(): Promise<{ name: string; count: num
   return [...top, { name: "Outros", count: outrosCount }];
 }
 
-// --- Prazos críticos (ticket 03) — headline count + vencido/hoje/próximos
-// grouping for the Prazos page. This is the ticket's own explicit
-// regression-guard seam: the vencido/vence-em-breve comparison itself is
-// never reimplemented here — it's delegated entirely to
-// `../deadlines/deadlines.controller`'s `listDeadlines`/`dueDateHighlight`
+// --- Prazos críticos (ticket 03 of dashboard-reports; bucketing moved out
+// in ui-shell-clientes-casos-config/03, spec.md fidelity check point 9) —
+// headline count + vencido/hoje/próximos grouping for the Prazos page. This
+// is the ticket's own explicit regression-guard seam: the vencido/hoje/
+// próximos bucketing itself is never reimplemented here — it's delegated
+// entirely to `../deadlines/deadlines.controller`'s `getPrazoBuckets`
 // (never `deadlines.repository.ts`/`deadlines.service.ts` directly, which
 // would also break eslint-plugin-boundaries — only `.controller.ts`-to-
 // `.controller.ts` cross-module imports are allowed). This function only
-// filters the result, groups it by calendar date, and resolves display
-// labels for the page.
+// resolves the "matter" display label (client + catalog item, cross-module
+// data `deadlines.service.ts` has no business knowing about) for each row
+// the shared bucketing already produced.
 
 /** Same "matters have no simple name" fallback label
  * DeadlinesTable.tsx's `matterLabel` uses — duplicated locally rather than
@@ -289,25 +291,37 @@ function resolveMatterLabel(
   return matterFallbackLabel(matter);
 }
 
+/** Maps one bucketed deadline (already highlight-tagged and grouped by
+ * `deadlines.controller`'s `getPrazoBuckets`) to this page's `PrazoRow` —
+ * the only thing left for this module to do is resolve `matterLabel`
+ * (cross-module: client + catalog item), everything else passes through. */
+function toPrazoRow(
+  deadline: PrazoBucketDeadline,
+  matterById: Map<string, Matter>,
+  clientById: Map<string, Client>,
+  catalogItemById: Map<string, { id: string; name: string }>,
+): PrazoRow {
+  return {
+    id: deadline.id,
+    matterLabel: resolveMatterLabel(matterById.get(deadline.matterId), clientById, catalogItemById),
+    description: deadline.description,
+    dueDate: deadline.dueDate,
+    highlight: deadline.highlight,
+    isFatal: deadline.isFatal,
+  };
+}
+
 /**
  * Headline count + vencido/hoje/próximos grouping for the Prazos page
- * (stories 12/13). Pulls every `pendente` deadline via
- * `deadlines.controller`'s `listDeadlines`, keeps only the ones
- * `dueDateHighlight` doesn't call `"on_track"` — that heuristic already
- * folds "already overdue" and "due within 5 dias" into
- * `"vencido"`/`"vence_em_breve"`, which is exactly the ticket's own
- * headline definition ("due within the alert window ... or already
- * overdue") — then splits that filtered set by a plain local-date-string
- * comparison against today, reusing this file's own `todayLocalIso` (the
- * same local-not-UTC helper `resolvePeriodoRange` already uses above,
- * deliberately not the UTC-anchored `toUtcMs`/`toIsoDate` pair — matches
- * `dueDateHighlight`'s own local-calendar-date comparison, not
- * computeDueDate's UTC business-day precision). No RBAC gate (ticket:
- * "Prazos page has no payments data involved").
+ * (stories 12/13). The grouping itself is entirely `deadlines.controller`'s
+ * `getPrazoBuckets` (no matterId — every pendente deadline in the tenant,
+ * unlike casos-detalhe's matter-scoped Prazos card); this function only
+ * resolves each row's `matterLabel` against `matters`/`clients`/`catalog`.
+ * No RBAC gate (ticket: "Prazos page has no payments data involved").
  */
 export async function getPrazosCriticos(): Promise<{ count: number; groups: PrazoGroups }> {
-  const [deadlines, matters, clients, catalogItems] = await Promise.all([
-    listDeadlines({ status: "pendente" }),
+  const [{ count, groups: buckets }, matters, clients, catalogItems] = await Promise.all([
+    getPrazoBuckets(),
     listMatters(),
     listClients(),
     catalogController.listCatalogItems(),
@@ -317,28 +331,12 @@ export async function getPrazosCriticos(): Promise<{ count: number; groups: Praz
   const clientById = new Map(clients.map((client) => [client.id, client] as const));
   const catalogItemById = new Map(catalogItems.map((item) => [item.id, item] as const));
 
-  const today = todayLocalIso();
-  const groups: PrazoGroups = { vencido: [], hoje: [], proximos: [] };
-  let count = 0;
-
-  for (const deadline of deadlines) {
-    const highlight = dueDateHighlight(deadline.dueDate, deadline.status);
-    if (highlight === "on_track") continue;
-
-    count++;
-    const row: PrazoRow = {
-      id: deadline.id,
-      matterLabel: resolveMatterLabel(matterById.get(deadline.matterId), clientById, catalogItemById),
-      description: deadline.description,
-      dueDate: deadline.dueDate,
-      highlight,
-      isFatal: deadline.isFatal,
-    };
-
-    if (deadline.dueDate < today) groups.vencido.push(row);
-    else if (deadline.dueDate === today) groups.hoje.push(row);
-    else groups.proximos.push(row);
-  }
-
-  return { count, groups };
+  return {
+    count,
+    groups: {
+      vencido: buckets.vencido.map((d) => toPrazoRow(d, matterById, clientById, catalogItemById)),
+      hoje: buckets.hoje.map((d) => toPrazoRow(d, matterById, clientById, catalogItemById)),
+      proximos: buckets.proximos.map((d) => toPrazoRow(d, matterById, clientById, catalogItemById)),
+    },
+  };
 }
