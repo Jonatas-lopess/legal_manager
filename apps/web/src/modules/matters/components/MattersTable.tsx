@@ -97,7 +97,7 @@ export function MattersTable() {
   }
 
   return (
-    <div className="flex w-full max-w-5xl flex-col gap-4" data-testid="matters-table">
+    <div className="flex w-full flex-col gap-4" data-testid="matters-table">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold">Casos</h1>
         <div className="flex flex-1 flex-wrap items-center justify-end gap-2">

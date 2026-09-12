@@ -321,7 +321,7 @@ export function MetricasPage() {
   }, []);
 
   return (
-    <div className="flex w-full max-w-5xl flex-col gap-4">
+    <div className="flex w-full flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">Métricas</h1>
         <select

@@ -154,7 +154,7 @@ export function PrazosPage() {
   const totalRows = state.groups.vencido.length + state.groups.hoje.length + state.groups.proximos.length;
 
   return (
-    <div className="flex w-full max-w-5xl flex-col gap-4">
+    <div className="flex w-full flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-semibold">Prazos</h1>

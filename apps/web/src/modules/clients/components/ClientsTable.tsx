@@ -67,7 +67,7 @@ export function ClientsTable() {
   }
 
   return (
-    <div className="flex w-full max-w-5xl flex-col gap-4" data-testid="clients-table">
+    <div className="flex w-full flex-col gap-4" data-testid="clients-table">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold">Clientes</h1>
         <div className="flex flex-wrap items-center gap-2">

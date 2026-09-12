@@ -92,7 +92,7 @@ export function DeadlinesTable() {
   }
 
   return (
-    <div className="flex w-full max-w-5xl flex-col gap-4" data-testid="deadlines-table">
+    <div className="flex w-full flex-col gap-4" data-testid="deadlines-table">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">Prazos</h1>
         <Button onClick={() => setDialogState({ mode: "create", deadline: null })}>Novo prazo</Button>

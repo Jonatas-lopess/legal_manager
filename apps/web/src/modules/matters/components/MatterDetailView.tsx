@@ -71,7 +71,7 @@ export function MatterDetailView() {
   const pageTitle = `${client?.name ?? "Sem cliente"} — ${matterCatalogLabel(matter, catalogItem ?? undefined)}`;
 
   return (
-    <div className="flex w-full max-w-3xl flex-col gap-4" data-testid="matter-detail-view">
+    <div className="flex w-full flex-col gap-4" data-testid="matter-detail-view">
       {matter.deletedAt && (
         <Card className="border-destructive/50 bg-destructive/5">
           <CardContent className="p-4 text-sm text-destructive">
