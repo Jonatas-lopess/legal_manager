@@ -1,4 +1,4 @@
-import type { Matter } from "../matters.controller";
+import { matterFallbackLabel, type Matter } from "../matters.controller";
 import type { CatalogItem } from "../../catalog/catalog.controller";
 
 // A short piece of a matter's description, appended to the catalog item
@@ -28,7 +28,7 @@ function shortenDescription(description: string): string {
  * matter has no description.
  */
 export function matterCatalogLabel(matter: Matter, catalogItem: CatalogItem | undefined): string {
-  if (!catalogItem) return `${matter.uf} — ${matter.description ?? matter.id.slice(0, 8)}`;
+  if (!catalogItem) return matterFallbackLabel(matter);
   if (!matter.description) return catalogItem.name;
   return `${catalogItem.name} - ${shortenDescription(matter.description)}`;
 }

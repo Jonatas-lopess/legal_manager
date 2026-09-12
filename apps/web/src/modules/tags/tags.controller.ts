@@ -19,5 +19,6 @@ export {
   attachTagToDeadlineByName,
   detachTagFromDeadline,
   listTagsForDeadline,
+  listTagsForDeadlines,
 } from "./tags.service";
 export type { Tag, CreateTagInput, UpdateTagInput } from "./tags.schema";

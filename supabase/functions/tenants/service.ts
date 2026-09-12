@@ -127,6 +127,14 @@ export async function removeMember(
   }
 
   if (target.role === "admin") {
+    // Fast-path pre-check, kept only so a sole-admin self-removal still
+    // gets this specific message ahead of the plain self-removal one below
+    // (see this function's own doc comment on that ordering). Not itself
+    // load-bearing for correctness under concurrency — two racing
+    // removeMember calls could both read a passing count here — that's
+    // deleteTenantMember's job (repository.ts): it re-checks inside a
+    // transaction that locks the tenant's admin rows first, so whichever
+    // request commits second is the one that actually gets rejected.
     const adminCount = await repo.countAdminsInTenant(deps.db, caller.tenantId);
     if (adminCount <= 1) {
       throw new HttpError(400, "Não é possível remover o último administrador do escritório.");
@@ -137,7 +145,14 @@ export async function removeMember(
     throw new HttpError(400, "Você não pode remover a si mesmo.");
   }
 
-  await repo.deleteTenantMember(deps.db, userId);
+  try {
+    await repo.deleteTenantMember(deps.db, userId, caller.tenantId);
+  } catch (error) {
+    if (error instanceof repo.LastAdminError) {
+      throw new HttpError(400, error.message);
+    }
+    throw error;
+  }
   await repo.deleteAuthUser(deps.authAdmin, userId);
 
   return { id: userId };

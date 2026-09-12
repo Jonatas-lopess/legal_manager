@@ -104,7 +104,9 @@ export async function listMatters({ status, clientId, search }: ListMattersParam
   if (clientId) query = query.eq("client_id", clientId);
   if (search) {
     const term = quoteFilterValue(`%${search}%`);
-    query = query.or(`description.ilike.${term},uf.ilike.${term},comarca.ilike.${term},municipio.ilike.${term}`);
+    query = query.or(
+      `description.ilike.${term},uf.ilike.${term},comarca.ilike.${term},municipio.ilike.${term},numero_cnj.ilike.${term}`,
+    );
   }
 
   return query.returns<MatterRow[]>();

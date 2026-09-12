@@ -148,3 +148,30 @@ export async function listTagsForDeadline(deadlineId: string): Promise<Tag[]> {
   if (error) throw error;
   return (data ?? []).map(toTag);
 }
+
+/** Batched form of listTagsForDeadline — one join query plus one tags query
+ * for the whole set, instead of two queries per deadline. */
+export async function listTagsForDeadlines(deadlineIds: string[]): Promise<Map<string, Tag[]>> {
+  if (deadlineIds.length === 0) return new Map();
+
+  const { data: joinRows, error: joinError } = await repo.listTagIdsForDeadlines(deadlineIds);
+  if (joinError) throw joinError;
+
+  const tagIds = [...new Set((joinRows ?? []).map((row) => row.tag_id))];
+  const tagById = new Map<string, Tag>();
+  if (tagIds.length > 0) {
+    const { data, error } = await repo.fetchTagsByIds(tagIds);
+    if (error) throw error;
+    for (const row of data ?? []) tagById.set(row.id, toTag(row));
+  }
+
+  const result = new Map<string, Tag[]>();
+  for (const row of joinRows ?? []) {
+    const tag = tagById.get(row.tag_id);
+    if (!tag) continue;
+    const list = result.get(row.deadline_id);
+    if (list) list.push(tag);
+    else result.set(row.deadline_id, [tag]);
+  }
+  return result;
+}

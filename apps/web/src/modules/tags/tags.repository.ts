@@ -105,4 +105,19 @@ export async function listTagIdsForDeadline(deadlineId: string) {
   return supabase.from("deadline_tags").select("tag_id").eq("deadline_id", deadlineId).returns<DeadlineTagRow[]>();
 }
 
+interface DeadlineTagJoinRow {
+  deadline_id: string;
+  tag_id: string;
+}
+
+/** Batched form of listTagIdsForDeadline — one query for every deadline_id
+ * instead of one per deadline (see MatterPrazosCard.tsx's refresh()). */
+export async function listTagIdsForDeadlines(deadlineIds: string[]) {
+  return supabase
+    .from("deadline_tags")
+    .select("deadline_id, tag_id")
+    .in("deadline_id", deadlineIds)
+    .returns<DeadlineTagJoinRow[]>();
+}
+
 export type { TagRow };

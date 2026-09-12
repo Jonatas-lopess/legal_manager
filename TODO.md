@@ -70,6 +70,7 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
   - `04-configuracoes-equipe-catalogo-tags.md` — done
   - `05-configuracoes-auditoria.md` — done
 - Wireframe node ids filled in (2026-09-11) — fidelity check against the real frames found real gaps (matters.numero_cnj, payments.description, team member removal, Configurações' Catálogo/Tags/Auditoria are compact not tabular); see spec.md's "Fidelity check against the drawn frames".
+- See `01-unified-app-shell.md` Comments for the 2026-09-12 code-review pass over tickets 01-04 (9 of 10 findings fixed, including a last-admin-removal race closed with a transactional row lock — an earlier DB-trigger attempt was reverted, see Comments; the 10th finding — past commits' message format — flagged, not rewritten).
 - Depends on: `postgres-schema-rls`, `tenants-auth-invite`, `clients-catalog-matters-crud`, `deadlines-engine-alerts`, `dashboard-reports`
 
 ## deploy-pipeline

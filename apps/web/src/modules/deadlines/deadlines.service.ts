@@ -34,7 +34,7 @@ const MS_PER_DAY = 86_400_000;
  * `new Date(iso)` followed by local getters/setters — that's the classic
  * off-by-one-day bug when the machine's local timezone isn't UTC. Every
  * helper below stays on this UTC rail end to end. */
-function toUtcMs(iso: string): number {
+export function toUtcMs(iso: string): number {
   const [year, month, day] = iso.split("-").map(Number);
   return Date.UTC(year, month - 1, day);
 }
@@ -273,7 +273,7 @@ export async function listDeadlines(filter: ListDeadlinesFilter = {}): Promise<D
 
 export type DueDateHighlight = "vencido" | "vence_em_breve" | "on_track";
 
-function todayLocalIso(): string {
+export function todayLocalIso(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }

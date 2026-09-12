@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createDeadline, updateDeadline, countingModes, type CountingMode, type Deadline } from "../deadlines.controller";
 import { createDeadlineInputSchema } from "../deadlines.schema";
-import { listMatters, type Matter } from "../../matters/matters.controller";
+import { listMatters, matterFallbackLabel as matterLabel, type Matter } from "../../matters/matters.controller";
 
 type FormInput = z.input<typeof createDeadlineInputSchema>;
 type FormOutput = z.output<typeof createDeadlineInputSchema>;
@@ -17,13 +17,6 @@ const countingModeLabels: Record<CountingMode, string> = {
   dias_uteis: "Dias úteis",
   dias_corridos: "Dias corridos",
 };
-
-/** Matters have no simple "name" field — mirrors how MattersTable.tsx/
- * DeadlinesTable.tsx label a matter for a picker: UF plus description (or
- * the id's first segment when there's no description yet). */
-function matterLabel(matter: Matter): string {
-  return `${matter.uf} — ${matter.description ?? matter.id.slice(0, 8)}`;
-}
 
 function toFormValues(deadline: Deadline | null, initialMatterId?: string): FormInput {
   return {

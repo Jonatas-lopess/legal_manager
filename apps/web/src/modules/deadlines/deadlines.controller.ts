@@ -10,6 +10,8 @@ export {
   listDeadlines,
   dueDateHighlight,
   getPrazoBuckets,
+  todayLocalIso,
+  toUtcMs,
 } from "./deadlines.service";
 export { countingModes, deadlineStatuses } from "./deadlines.schema";
 export type {

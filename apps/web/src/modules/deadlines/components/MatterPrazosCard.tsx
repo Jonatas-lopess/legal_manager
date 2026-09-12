@@ -4,11 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   getPrazoBuckets,
   markDeadlineCumprido,
+  todayLocalIso,
+  toUtcMs,
   type PrazoBucketDeadline,
   type PrazoBuckets,
 } from "../deadlines.controller";
 import { DeadlineDialog } from "./DeadlineDialog";
-import { listTagsForDeadline, type Tag } from "../../tags/tags.controller";
+import { listTagsForDeadlines, type Tag } from "../../tags/tags.controller";
 
 interface MatterPrazosCardProps {
   matterId: string;
@@ -46,16 +48,6 @@ function TagChip({ tag }: { tag: Tag }) {
   );
 }
 
-function todayLocalIso(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
-
-function toUtcMs(iso: string): number {
-  const [year, month, day] = iso.split("-").map(Number);
-  return Date.UTC(year, month - 1, day);
-}
-
 /** Per-bucket due-date text (ticket 03's fidelity check point 8): an
  * absolute date for vencido, a bare "Hoje" for hoje — no fabricated
  * time-of-day, `deadlines.dueDate` has no time component — and "Em N dias"
@@ -71,14 +63,14 @@ function PrazoRowItem({
   deadline,
   bucket,
   today,
-  tag,
+  tags,
   busy,
   onMarkCumprido,
 }: {
   deadline: PrazoBucketDeadline;
   bucket: Bucket;
   today: string;
-  tag: Tag | undefined;
+  tags: Tag[];
   busy: boolean;
   onMarkCumprido: (id: string) => void;
 }) {
@@ -96,7 +88,11 @@ function PrazoRowItem({
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-1.5">
         <span className={PILL_CLASS}>{statusLabel}</span>
-        {deadline.isFatal ? <span className={PILL_CLASS}>● Fatal</span> : tag ? <TagChip tag={tag} /> : null}
+        {deadline.isFatal ? (
+          <span className={PILL_CLASS}>● Fatal</span>
+        ) : (
+          tags.map((tag) => <TagChip key={tag.id} tag={tag} />)
+        )}
         <Button
           type="button"
           size="sm"
@@ -135,10 +131,7 @@ export function MatterPrazosCard({ matterId }: MatterPrazosCardProps) {
       setBuckets(result);
 
       const allDeadlines = [...result.groups.vencido, ...result.groups.hoje, ...result.groups.proximos];
-      const tagEntries = await Promise.all(
-        allDeadlines.map(async (d) => [d.id, await listTagsForDeadline(d.id)] as const),
-      );
-      setTagsByDeadlineId(new Map(tagEntries));
+      setTagsByDeadlineId(await listTagsForDeadlines(allDeadlines.map((d) => d.id)));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível carregar os prazos.");
     } finally {
@@ -193,7 +186,7 @@ export function MatterPrazosCard({ matterId }: MatterPrazosCardProps) {
                         deadline={deadline}
                         bucket={key}
                         today={today}
-                        tag={tagsByDeadlineId.get(deadline.id)?.[0]}
+                        tags={tagsByDeadlineId.get(deadline.id) ?? []}
                         busy={busy}
                         onMarkCumprido={handleMarkCumprido}
                       />

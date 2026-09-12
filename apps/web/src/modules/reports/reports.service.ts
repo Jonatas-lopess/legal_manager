@@ -1,7 +1,7 @@
 import type { PeriodoBucket, PrazoRow, PrazoGroups } from "./reports.schema";
 import * as repo from "./reports.repository";
 import { getCurrentUser } from "../tenants/tenants.controller";
-import { matterStatuses, listMatters } from "../matters/matters.controller";
+import { matterStatuses, listMatters, matterFallbackLabel } from "../matters/matters.controller";
 import type { MatterStatus, Matter } from "../matters/matters.controller";
 import * as catalogController from "../catalog/catalog.controller";
 import { listClients } from "../clients/clients.controller";
@@ -259,16 +259,6 @@ export async function getVolumePorCatalogo(): Promise<{ name: string; count: num
 // resolves the "matter" display label (client + catalog item, cross-module
 // data `deadlines.service.ts` has no business knowing about) for each row
 // the shared bucketing already produced.
-
-/** Same "matters have no simple name" fallback label
- * DeadlinesTable.tsx's `matterLabel` uses — duplicated locally rather than
- * shared, matching this codebase's existing precedent for that exact
- * two-field format (see DeadlinesTable.tsx's own comment on the tradeoff,
- * and DeadlineTagPicker.tsx before it; this is now a third call site of
- * the same shape). */
-function matterFallbackLabel(matter: Matter): string {
-  return `${matter.uf} — ${matter.description ?? matter.id.slice(0, 8)}`;
-}
 
 /** Resolves the "matter" column shown on each Prazos row (ticket 03's
  * component spec: "matter (client + catalog item, or the fallback)"):

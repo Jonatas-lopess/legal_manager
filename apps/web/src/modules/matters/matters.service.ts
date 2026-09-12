@@ -4,6 +4,15 @@ import * as repo from "./matters.repository";
 import type { MatterRow } from "./matters.repository";
 import { getCurrentUser } from "../tenants/tenants.controller";
 
+/** Fallback label for a matter with no catalog item (e.g. a `rascunho`):
+ * UF plus a short piece of its own description, or the id's first segment
+ * when there's no description yet. The single shared source for this
+ * formula — previously reimplemented independently in DeadlinesTable.tsx,
+ * DeadlineDialog.tsx, reports.service.ts, and matterCatalogLabel.ts. */
+export function matterFallbackLabel(matter: Matter): string {
+  return `${matter.uf} — ${matter.description ?? matter.id.slice(0, 8)}`;
+}
+
 function toMatter(row: MatterRow): Matter {
   return {
     id: row.id,

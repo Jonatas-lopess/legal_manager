@@ -77,7 +77,7 @@ export async function fetchMemberById(db: Pool, userId: string): Promise<TargetM
   return row ? { tenantId: row.tenant_id, role: row.role } : null;
 }
 
-/** Used by the last-admin guardrail — counts admins currently in a tenant. */
+/** Used by removeMember's fast-path pre-check — see service.ts. */
 export async function countAdminsInTenant(db: Pool, tenantId: string): Promise<number> {
   const { rows } = await db.query<{ count: string }>(
     "select count(*)::text as count from public.users where tenant_id = $1 and role = 'admin'",
@@ -86,7 +86,51 @@ export async function countAdminsInTenant(db: Pool, tenantId: string): Promise<n
   return Number(rows[0]?.count ?? 0);
 }
 
-/** Same direct-Postgres reasoning as insertTenantMember — the reverse write. */
-export async function deleteTenantMember(db: Pool, userId: string): Promise<void> {
-  await db.query("delete from public.users where id = $1", [userId]);
+/** Raised by deleteTenantMember when the target is the tenant's last admin. */
+export class LastAdminError extends Error {}
+
+/**
+ * Same direct-Postgres reasoning as insertTenantMember — the reverse write,
+ * but wrapped in its own transaction: it first locks every admin row of the
+ * tenant (`for update`), *then* checks whether the target is the tenant's
+ * last admin, and only then deletes — closing the TOCTOU race two
+ * concurrent removeMember calls would otherwise hit (each reading a passing
+ * admin count before either commits). Only ever raises `LastAdminError` for
+ * this one write path — direct deletion of a `users` row from elsewhere
+ * (e.g. cascading from an Auth user deletion, see audit.service.test.ts's
+ * "surfaces a row with a null actor" case) is untouched, deliberately: this
+ * repo already relies on a tenant being able to end up with zero admins via
+ * that path, so the guard can't be a blanket DB-level constraint/trigger,
+ * only this call site's own check.
+ */
+export async function deleteTenantMember(db: Pool, userId: string, tenantId: string): Promise<void> {
+  const client = await db.connect();
+  try {
+    await client.query("begin");
+    await client.query("select 1 from public.users where tenant_id = $1 and role = 'admin' for update", [
+      tenantId,
+    ]);
+
+    const { rows: targetRows } = await client.query<{ role: string }>(
+      "select role from public.users where id = $1",
+      [userId],
+    );
+    if (targetRows[0]?.role === "admin") {
+      const { rows: countRows } = await client.query<{ count: string }>(
+        "select count(*)::text as count from public.users where tenant_id = $1 and role = 'admin'",
+        [tenantId],
+      );
+      if (Number(countRows[0]?.count ?? 0) <= 1) {
+        throw new LastAdminError("Não é possível remover o último administrador do escritório.");
+      }
+    }
+
+    await client.query("delete from public.users where id = $1", [userId]);
+    await client.query("commit");
+  } catch (error) {
+    await client.query("rollback").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
 }

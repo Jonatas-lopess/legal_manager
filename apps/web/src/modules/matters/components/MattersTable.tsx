@@ -1,10 +1,11 @@
 import * as React from "react";
 import { useLocation } from "wouter";
+import { Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { listMatters, matterStatuses, type Matter, type MatterStatus } from "../matters.controller";
+import { listMatters, softDeleteMatter, matterStatuses, type Matter, type MatterStatus } from "../matters.controller";
 import { listClients, type Client } from "../../clients/clients.controller";
 import { listCatalogItems, type CatalogItem } from "../../catalog/catalog.controller";
 import { MatterDialog } from "./MatterDialog";
@@ -80,6 +81,18 @@ export function MattersTable() {
 
   function openCreateDialog() {
     setDialogState({ mode: "create", matter: null });
+  }
+
+  async function handleArchive(matter: Matter, e: React.MouseEvent) {
+    e.stopPropagation();
+    const label = matterCatalogLabel(matter, matter.matterCatalogItemId ? catalogItemById.get(matter.matterCatalogItemId) : undefined);
+    if (!window.confirm(`Arquivar o caso "${label}"? O registro é mantido para fins de auditoria.`)) return;
+    try {
+      await softDeleteMatter(matter.id);
+      await fetchMatters();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível arquivar o caso.");
+    }
   }
 
   return (
@@ -175,7 +188,19 @@ export function MattersTable() {
                     <td className="p-3">
                       <span className={STATUS_PILL_CLASS}>{statusLabels[matter.status]}</span>
                     </td>
-                    <td className="p-3 text-right text-muted-foreground">›</td>
+                    <td className="p-3 text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Arquivar caso`}
+                          onClick={(e) => handleArchive(matter, e)}
+                        >
+                          <Archive className="h-4 w-4" />
+                        </Button>
+                        <span className="self-center text-muted-foreground">›</span>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>

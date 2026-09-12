@@ -144,6 +144,35 @@ describe("removeMember Edge Function service", () => {
     expect(await userRowExists(tenant.adminId)).toBe(true);
   });
 
+  it("closes the race between two concurrent removals of a tenant's last two admins", async () => {
+    const tenant = await seedTenantWithAdmin();
+    const secondAdmin = await seedMember(tenant.tenantId, "admin");
+    const jwt1 = await signIn(tenant.adminEmail, tenant.adminPassword);
+    const jwt2 = await signIn(secondAdmin.email, secondAdmin.password);
+
+    // Both admins try to remove each other at the same time. Each request's
+    // own countAdminsInTenant pre-check (service.ts) can read 2 before
+    // either delete commits — that pre-check alone can't close this race.
+    // trg_prevent_last_admin_removal (see migrations) is what actually
+    // serializes the two deletes and rejects whichever commits second.
+    const results = await Promise.allSettled([
+      removeMember(deps, jwt1, { userId: secondAdmin.id }),
+      removeMember(deps, jwt2, { userId: tenant.adminId }),
+    ]);
+
+    const fulfilled = results.filter((r) => r.status === "fulfilled");
+    const rejected = results.filter((r) => r.status === "rejected");
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect((rejected[0] as PromiseRejectedResult).reason).toMatchObject({
+      status: 400,
+      message: "Não é possível remover o último administrador do escritório.",
+    } satisfies Partial<HttpError>);
+
+    // Exactly one admin was actually removed — never both.
+    expect(await countUsersInTenant(tenant.tenantId)).toBe(1);
+  });
+
   it("is tenant-scoped: rejects removing a user from a different tenant", async () => {
     const tenantA = await seedTenantWithAdmin();
     const tenantB = await seedTenantWithAdmin();

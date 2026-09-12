@@ -107,6 +107,20 @@ function ClientDialogContent({
             )}
           </div>
 
+          {mode === "edit" && (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="client-status">Status</Label>
+              <select
+                id="client-status"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                {...register("status")}
+              >
+                <option value="ativo">Ativo</option>
+                <option value="inativo">Inativo</option>
+              </select>
+            </div>
+          )}
+
           <div className="flex flex-col gap-2">
             <Label htmlFor="client-cpf">CPF</Label>
             <Controller

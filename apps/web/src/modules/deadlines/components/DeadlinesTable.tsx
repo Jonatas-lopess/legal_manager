@@ -9,7 +9,7 @@ import {
   type DeadlineStatus,
   type DueDateHighlight,
 } from "../deadlines.controller";
-import { listMatters, type Matter } from "../../matters/matters.controller";
+import { listMatters, matterFallbackLabel, type Matter } from "../../matters/matters.controller";
 import { DeadlineTagPicker } from "../../tags/components/DeadlineTagPicker";
 import { DeadlineDialog } from "./DeadlineDialog";
 
@@ -23,13 +23,7 @@ const countingModeLabels: Record<Deadline["countingMode"], string> = {
   dias_corridos: "Dias corridos",
 };
 
-/** Same "matters have no simple name" labeling DeadlineDialog.tsx uses for
- * its picker — kept as a small local duplicate rather than a shared helper
- * module for two call sites (this codebase's own preference, see
- * DeadlineTagPicker.tsx's comment on the same tradeoff). */
-function matterLabel(matter: Matter): string {
-  return `${matter.uf} — ${matter.description ?? matter.id.slice(0, 8)}`;
-}
+const matterLabel = matterFallbackLabel;
 
 // dueDateHighlight itself now lives in deadlines.service.ts (dashboard-
 // reports reuses it) — this file keeps only the presentation mapping.
