@@ -93,5 +93,8 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
 
 - Status: `ready-for-agent`
 - Spec: `.scratch/deploy-pipeline/spec.md`
-- PLANNING.md §7 step 7. Repo has no GitHub remote yet — a prerequisite this spec's Further Notes calls out.
+- PLANNING.md §7 step 7. Repo now has a GitHub remote (`origin`) — spec's stated blocker is stale.
+- Issues:
+  - `01-github-actions-workflow.md` — ready-for-agent (workflow written and YAML-validated; blocked on manual prod-credential/project setup and a first live run — see ticket)
+  - `02-manual-setup-wizard.md` — ready-for-agent (`scripts/setup-deploy-pipeline.sh` written; operator still needs to run it)
 - Depends on: `postgres-schema-rls`, `tenants-auth-invite`, `clients-catalog-matters-crud`, `deadlines-engine-alerts`, `dashboard-reports`

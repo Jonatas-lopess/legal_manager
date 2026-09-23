@@ -8,7 +8,7 @@ See `PLANNING.md` for full scope, stack, data model, and build order — read it
 
 ## Status
 
-MVP feature-complete per `TODO.md`: schema/RLS, multi-tenant auth, clients/catalog/matters CRUD, deadlines engine + alerts, dashboard reports, and the UI shell are all `done`. Only the deploy pipeline is still open.
+MVP feature-complete per `TODO.md`: schema/RLS, multi-tenant auth, clients/catalog/matters CRUD, deadlines engine + alerts, dashboard reports, and the UI shell are all `done`. Only the deploy pipeline is still open — the workflow (`.github/workflows/deploy.yml`) is written; production credentials aren't provisioned yet (see below).
 
 ## Stack
 
@@ -59,7 +59,11 @@ pnpm dev
 | `pnpm db:push` | Push schema changes to the database |
 | `pnpm db:studio` | Open Drizzle Studio |
 
+## Deploy pipeline
+
+`.github/workflows/deploy.yml` runs on every push to `main`: lint → test → build → apply migrations → deploy Edge Functions → deploy the SPA to Cloudflare Pages → smoke test. It needs a production Supabase project, a Cloudflare Pages project, and a handful of GitHub secrets/variables first — run `./scripts/setup-deploy-pipeline.sh` to provision those interactively (safe to re-run; it remembers values already saved in `.env.production.local`). See `.scratch/deploy-pipeline/spec.md` for the full design.
+
 ## Agent skills
 
-- **Issue tracker**: local markdown under `.scratch/<feature-slug>/`, no git remote. See `docs/agents/issue-tracker.md`. `TODO.md` is a quick index, not the source of truth.
+- **Issue tracker**: local markdown under `.scratch/<feature-slug>/`. See `docs/agents/issue-tracker.md`. `TODO.md` is a quick index, not the source of truth.
 - **Domain docs**: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.

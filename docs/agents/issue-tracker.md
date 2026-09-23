@@ -35,4 +35,4 @@ Used by `/wayfinder`. The **map** is a file with one **child** file per ticket.
 
 ## PRs as a request surface
 
-Off. This repo has no git remote configured, so there is no PR surface to poll.
+Off. This repo pushes straight to `main` (no PR-based workflow established), so there is no PR surface to poll.
