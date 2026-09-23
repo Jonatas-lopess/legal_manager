@@ -16,9 +16,11 @@
 **Fora do MVP** (deixar hooks arquiteturais, não construir agora):
 - Acompanhamento de processos (integração Jusbrasil, PJe, Projudi ou similar) — API não-oficial/scraping frágil, alto custo de engenharia
 - Integração WhatsApp (mensagens automáticas)
-- Agente de IA para referência jurídica
+- Agente de IA para referência jurídica (RAG sobre jurisprudência/doutrina) — continua fora, escopo grande e distinto do item abaixo
 - Portal do cliente — feature de venda, não de retenção nesse estágio
 - Documentos avançado (upload, e-signature, versionamento, template de petição) — editor de petição é projeto à parte
+
+**Trazido pro escopo (decisão 2026-09-22)**: resumo diário por LLM — dado do dia (prazos vencendo, matters em andamento) resumido em linguagem natural no dashboard. Menor escopo que o "agente de IA" acima (sem RAG, sem chat, uma chamada de leitura sobre dado já existente) — ver §5.
 
 ## 2. O que reaproveitar do ManagerDesk
 

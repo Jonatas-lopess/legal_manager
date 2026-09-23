@@ -25,6 +25,7 @@ import {
 // new shared export, matching this repo's existing precedent of a
 // per-component label object.
 import { matterStatuses, type MatterStatus } from "../../matters/matters.controller";
+import { DailySummaryCard } from "../../insights/components/DailySummaryCard";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -337,6 +338,8 @@ export function MetricasPage() {
           ))}
         </select>
       </div>
+
+      <DailySummaryCard />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Clientes ativos" state={clientesAtivos} format={(v) => String(v)} />

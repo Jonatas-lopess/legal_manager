@@ -8,7 +8,7 @@ See `PLANNING.md` for full scope, stack, data model, and build order — read it
 
 ## Status
 
-Monorepo skeleton, scaffolded per `PLANNING.md` §6. Module folders under `apps/web/src/modules/*` hold stub `.controller.ts` / `.service.ts` / `.repository.ts` / `.schema.ts` files only — no domain logic, no Postgres schema, no auth yet.
+MVP feature-complete per `TODO.md`: schema/RLS, multi-tenant auth, clients/catalog/matters CRUD, deadlines engine + alerts, dashboard reports, and the UI shell are all `done`. Only the deploy pipeline is still open.
 
 ## Stack
 
