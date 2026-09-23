@@ -156,4 +156,24 @@ describe("generateDailySummary", () => {
     expect(result.stats.dueTodayCount).toBe(1);
     expect(result.stats.activeMattersCount).toBe(2);
   });
+
+  it("wraps a callModel failure in a 502 HttpError with a user-facing message", async () => {
+    const callModel = vi.fn().mockRejectedValue(new Error("Groq request failed (429 Too Many Requests): rate limited"));
+
+    const promise = generateDailySummary(
+      {
+        db: fakeDb({ tenant_id: "t1" }, [row({ due_date: "2026-09-22" })], 2),
+        authClient,
+        callModel,
+        today: "2026-09-22",
+      },
+      "jwt",
+    );
+
+    await expect(promise).rejects.toThrow(HttpError);
+    await expect(promise).rejects.toMatchObject({
+      status: 502,
+      message: "Não foi possível gerar o resumo agora (serviço de IA indisponível). Tente novamente em instantes.",
+    });
+  });
 });

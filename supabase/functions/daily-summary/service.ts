@@ -203,6 +203,16 @@ export async function generateDailySummary(deps: DailySummaryDeps, jwt: string |
     return { summary: EMPTY_SNAPSHOT_SUMMARY, generatedAt: new Date().toISOString(), stats };
   }
 
-  const summary = await deps.callModel({ system: SYSTEM_PROMPT, user: buildUserPrompt(snapshot) });
+  let summary: string;
+  try {
+    summary = await deps.callModel({ system: SYSTEM_PROMPT, user: buildUserPrompt(snapshot) });
+  } catch (error) {
+    // Full error (Groq's raw status/body) goes to the function logs, not the
+    // client — index.ts's catch skips its own console.error for HttpError,
+    // so this is the only place it gets logged.
+    console.error("daily-summary: model call failed", error);
+    throw new HttpError(502, "Não foi possível gerar o resumo agora (serviço de IA indisponível). Tente novamente em instantes.");
+  }
+
   return { summary, generatedAt: new Date().toISOString(), stats };
 }
