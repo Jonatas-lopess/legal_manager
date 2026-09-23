@@ -81,6 +81,14 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
 - **2026-09-12**: tickets `06`-`11` implemented and closed. No Figma MCP/browser-screenshot tool available in this environment — verified against `cap1.png` (a rendered reference of the Prazos page dropped in the repo root) plus `tsc --noEmit`/`vitest run` (18 files, 101 tests, all passing); see each ticket's Comments for specifics.
 - Depends on: `postgres-schema-rls`, `tenants-auth-invite`, `clients-catalog-matters-crud`, `deadlines-engine-alerts`, `dashboard-reports`
 
+## local-dev-infra
+
+- Status: `ready-for-agent`
+- Spec: `.scratch/local-dev-infra/spec.md`
+- Not a feature — cross-cutting local-stack bugs found while verifying other features end-to-end.
+- Issues:
+  - `01-edge-runtime-pg-dns-resolution.md` — ready-for-agent (Edge Functions' `pg.Pool` can't resolve the local `supabase_db_<project>` container; found while verifying `daily-summary`, also reproduces on the already-`done` `tenants`)
+
 ## deploy-pipeline
 
 - Status: `ready-for-agent`
