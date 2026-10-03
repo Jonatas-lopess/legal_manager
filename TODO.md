@@ -83,11 +83,11 @@ Quick index into `.scratch/`. Each file's own `Status:` line is the source of tr
 
 ## local-dev-infra
 
-- Status: `ready-for-agent`
+- Status: `done`
 - Spec: `.scratch/local-dev-infra/spec.md`
 - Not a feature — cross-cutting local-stack bugs found while verifying other features end-to-end.
 - Issues:
-  - `01-edge-runtime-pg-dns-resolution.md` — ready-for-agent (Edge Functions' `pg.Pool` can't resolve the local `supabase_db_<project>` container; found while verifying `daily-summary`, also reproduces on the already-`done` `tenants`)
+  - `01-edge-runtime-pg-dns-resolution.md` — done (Deno's resolver rejects the underscores in `supabase_db_<project>`; fixed by routing via the `db` network alias, see ticket)
 
 ## deploy-pipeline
 

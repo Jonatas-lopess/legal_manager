@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 # Local dev infra: cross-cutting bugs in the local Supabase stack
 

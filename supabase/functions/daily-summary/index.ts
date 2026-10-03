@@ -10,6 +10,7 @@
 // `resolveTenantIdForUser`, same shape as supabase/functions/tenants/index.ts.
 import { createClient } from "npm:@supabase/supabase-js@2.49.0";
 import { Pool } from "npm:pg@8.23.0";
+import { resolveDbUrl } from "../_shared/db-url.ts";
 import { callGroq } from "./repository.ts";
 import { generateDailySummary, HttpError } from "./service.ts";
 
@@ -26,7 +27,7 @@ function requireEnv(name: string): string {
 
 const supabaseUrl = requireEnv("SUPABASE_URL");
 const anonKey = requireEnv("SUPABASE_ANON_KEY");
-const dbUrl = requireEnv("SUPABASE_DB_URL");
+const dbUrl = resolveDbUrl(requireEnv("SUPABASE_DB_URL"));
 const groqApiKey = requireEnv("GROQ_API_KEY");
 
 const authClient = createClient(supabaseUrl, anonKey);

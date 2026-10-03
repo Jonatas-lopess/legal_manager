@@ -11,6 +11,7 @@
 // there's no caller-JWT verification here the way tenants/service.ts's
 // inviteUser does.
 import { Pool } from "npm:pg@8.23.0";
+import { resolveDbUrl } from "../_shared/db-url.ts";
 import { fetchHolidaysFromFeriadosApi } from "./repository.ts";
 import { syncCivilHolidays } from "./service.ts";
 
@@ -27,7 +28,7 @@ function requireEnv(name: string): string {
 
 // Direct Postgres, not a supabase-js client — see repository.ts's
 // upsertCivilHolidays doc comment for why.
-const dbUrl = requireEnv("SUPABASE_DB_URL");
+const dbUrl = resolveDbUrl(requireEnv("SUPABASE_DB_URL"));
 // FeriadosAPI key — see repository.ts's module comment: the
 // Authorization: Bearer <key> auth shape is a best-effort read of the
 // public docs, not verified against a real account.

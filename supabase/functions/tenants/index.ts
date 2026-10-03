@@ -9,6 +9,7 @@
 // bare specifiers aren't valid unprefixed in Deno).
 import { createClient } from "npm:@supabase/supabase-js@2.49.0";
 import { Pool } from "npm:pg@8.23.0";
+import { resolveDbUrl } from "../_shared/db-url.ts";
 import { HttpError, inviteUser, removeMember } from "./service.ts";
 
 declare const Deno: {
@@ -25,7 +26,7 @@ function requireEnv(name: string): string {
 const supabaseUrl = requireEnv("SUPABASE_URL");
 const anonKey = requireEnv("SUPABASE_ANON_KEY");
 const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
-const dbUrl = requireEnv("SUPABASE_DB_URL");
+const dbUrl = resolveDbUrl(requireEnv("SUPABASE_DB_URL"));
 
 const authClient = createClient(supabaseUrl, anonKey);
 const authAdmin = createClient(supabaseUrl, serviceRoleKey, {

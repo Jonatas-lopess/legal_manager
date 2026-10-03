@@ -10,6 +10,7 @@
 // key as a bearer token, never an end-user JWT, so there's no caller-JWT
 // verification here, same reasoning as deadlines-holiday-sync/index.ts.
 import { Pool } from "npm:pg@8.23.0";
+import { resolveDbUrl } from "../_shared/db-url.ts";
 import { sendAlertEmailViaResend } from "./repository.ts";
 import { runDeadlineAlerts } from "./service.ts";
 
@@ -26,7 +27,7 @@ function requireEnv(name: string): string {
 
 // Direct Postgres, not a supabase-js client — see repository.ts's module
 // comment for why.
-const dbUrl = requireEnv("SUPABASE_DB_URL");
+const dbUrl = resolveDbUrl(requireEnv("SUPABASE_DB_URL"));
 // Resend API key — see repository.ts's module comment: the request/response
 // shape is verified against Resend's real docs, but no live account/key was
 // available to exercise it end-to-end as part of this ticket.
