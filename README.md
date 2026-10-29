@@ -1,7 +1,8 @@
-<!-- portfolio:start -->
 # Legal Manager
 
+<!-- portfolio:start -->
 SaaS multi-tenant de gestão para escritórios de advocacia. MVP foca em Controle de Clientes, Controle de Matters (catálogo personalizado), Gestão de Prazos (motor de contagem — diferencial do produto) e relatórios operacionais de prazo.
+<!-- portfolio:end -->
 
 Rebuilt from the sibling `office_manager` (ManagerDesk) project — a local-first, single-tenant Tauri + cr-sqlite desktop app. This project reuses ManagerDesk's UI kit, form patterns, and schema conventions, but swaps its sync/network layer for a classic client-server architecture (Postgres + Supabase).
 
@@ -32,7 +33,6 @@ legal_manager/
     ├── functions/             # Edge Functions (Deno)
     └── migrations/            # generated via drizzle-kit, applied via Supabase CLI
 ```
-<!-- portfolio:end -->
 
 See `PLANNING.md` for full scope, stack, data model, and build order — read it before writing code, and keep it in sync as decisions change.
 
