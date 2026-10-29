@@ -1,7 +1,7 @@
 # Legal Manager
 
 <!-- portfolio:start -->
-SaaS multi-tenant de gestão para escritórios de advocacia. MVP foca em Controle de Clientes, Controle de Matters (catálogo personalizado), Gestão de Prazos (motor de contagem — diferencial do produto) e relatórios operacionais de prazo.
+A multi-tenant SaaS for law firms. It handles client and matter tracking, a customizable matter catalog, and a deadline engine that counts legal deadlines and reports on them.
 <!-- portfolio:end -->
 
 Rebuilt from the sibling `office_manager` (ManagerDesk) project — a local-first, single-tenant Tauri + cr-sqlite desktop app. This project reuses ManagerDesk's UI kit, form patterns, and schema conventions, but swaps its sync/network layer for a classic client-server architecture (Postgres + Supabase).
